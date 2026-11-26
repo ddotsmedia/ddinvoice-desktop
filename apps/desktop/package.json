@@ -41,7 +41,7 @@
     "bonjour-service": "1.4.4",
     "decimal.js": "10.6.0",
     "electron-updater": "6.8.11",
-    "i18next": "25.10.10",
+    "i18next": "26.3.4",
     "i18next-browser-languagedetector": "8.2.0",
     "lucide-react": "1.81.0",
     "openapi-fetch": "0.17.0",

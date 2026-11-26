@@ -9,7 +9,8 @@ if (Test-Path (Join-Path $data 'server.json')) { Write-Host "SMOKE REFUSED: $dat
 $svc = 'DDInvoicePostgres', 'DDInvoiceApi', 'DDInvoiceWorker'
 $fail = $null
 try {
-  $p = Start-Process $Installer -ArgumentList '/S', '/ROLE=server', "/D=$dir" -Wait -PassThru
+  $p = Start-Process $Installer -ArgumentList '/S', '/ROLE=server', "/D=$dir" -PassThru
+  if (-not $p.WaitForExit(420000)) { throw 'installer timed out after 7 min' }
   if ($p.ExitCode) { throw "installer exit $($p.ExitCode)" }
   foreach ($s in $svc) { if ((Get-Service $s -ErrorAction Stop).Status -ne 'Running') { throw "$s not running" } }
   $cfg = Get-Content (Join-Path $data 'server.json') -Raw | ConvertFrom-Json
@@ -18,7 +19,8 @@ try {
   if ($code -ne '200') { throw "/health returned $code" }
   if ((Get-Content (Join-Path $data 'role.json') -Raw | ConvertFrom-Json).role -ne 'server') { throw 'role.json wrong' }
   $un = Get-ChildItem $dir -Filter 'Uninstall*.exe' | Select-Object -First 1
-  $u = Start-Process $un.FullName -ArgumentList '/S' -Wait -PassThru
+  $u = Start-Process $un.FullName -ArgumentList '/S' -PassThru
+  if (-not $u.WaitForExit(180000)) { throw 'uninstaller timed out after 3 min' }
   if ($u.ExitCode) { throw "uninstaller exit $($u.ExitCode)" }
   Start-Sleep 3
   foreach ($s in $svc) { if (Get-Service $s -ErrorAction SilentlyContinue) { throw "$s still registered" } }

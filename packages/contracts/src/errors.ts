@@ -17,6 +17,11 @@ export enum ErrorCode {
   PeriodLocked = 'PERIOD_LOCKED',
   IllegalTransition = 'ILLEGAL_TRANSITION',
   JournalUnbalanced = 'JOURNAL_UNBALANCED',
+  SeatLimit = 'SEAT_LIMIT',
+  LicenseReadOnly = 'LICENSE_READ_ONLY',
+  ModuleNotLicensed = 'MODULE_NOT_LICENSED',
+  LicenseInvalid = 'LICENSE_INVALID',
+  RecoveryMode = 'RECOVERY_MODE',
   Internal = 'INTERNAL',
 }
 

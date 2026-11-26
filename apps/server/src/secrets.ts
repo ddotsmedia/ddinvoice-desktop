@@ -7,6 +7,8 @@ export interface Secrets {
   appPassword: string;
   /** Authorises loopback-only pairing-code issuance for the server screen / CLI. */
   localToken: string;
+  /** Backup encryption key, base64url (32 bytes). Its printable form is the recovery key, shown once at install. Absent on installs made before Prompt 8. */
+  backupKey?: string;
 }
 
 const PS = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command'];

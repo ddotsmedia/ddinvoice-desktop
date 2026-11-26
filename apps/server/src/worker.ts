@@ -9,6 +9,7 @@ import { createDocumentRenderHandler } from './documents/document-render.handler
 import { PDF_RENDERER, pdfRendererProvider, type PdfRenderer } from './documents/pdf-renderer';
 import { STUB_HANDLERS } from './outbox/handlers';
 import { OutboxWorker, type OutboxHandler } from './outbox/outbox.worker';
+import { BackupService } from './ops/backup.service';
 
 @Module({})
 class WorkerModule {
@@ -31,6 +32,7 @@ class WorkerModule {
           inject: [PrismaService, CONFIG, PDF_RENDERER],
         },
         OutboxWorker,
+        BackupService,
       ],
     };
   }
@@ -40,9 +42,11 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const app = await NestFactory.createApplicationContext(WorkerModule.register(config), { logger: ['error', 'warn', 'log'] });
   app.get(OutboxWorker).start();
+  app.get(BackupService).start();
   Logger.log('ddinvoice worker polling Outbox', 'Worker');
   const stop = async () => {
     app.get(OutboxWorker).stop();
+    app.get(BackupService).stop();
     await app.get<PdfRenderer>(PDF_RENDERER).close();
     await app.close();
     process.exit(0);

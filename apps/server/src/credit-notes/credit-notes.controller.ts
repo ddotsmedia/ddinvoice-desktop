@@ -1,3 +1,4 @@
+import { RequiresModule } from '../license/license.guard';
 import { Body, Controller, Get, Inject, Module, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
@@ -11,6 +12,7 @@ import { CreateCreditNoteSchema, type CreateCreditNoteInput } from './credit-not
 const ListSchema = z.object({ invoiceId: Id.optional() });
 
 @ApiTags('credit-notes')
+@RequiresModule('sales')
 @Controller('credit-notes')
 class CreditNotesController {
   constructor(@Inject(CreditNotesService) private readonly creditNotes: CreditNotesService) {}

@@ -69,6 +69,20 @@ export async function seedDemo(
     data: { companyId, email: opts.adminEmail ?? 'admin@demo.local', nameEn: opts.adminEmail ? 'Administrator' : 'Demo Admin', passwordHash: await hashPassword(adminPassword) },
   });
   await prisma.userRole.create({ data: { companyId, userId: admin.id, roleId: roles.owner! } });
+  // Install creates a 30-day trial: 3 seats, every module. Trials are unsigned (no vendor key on the customer PC).
+  const issuedAt = new Date();
+  const expiresAt = new Date(issuedAt.getTime() + 30 * 24 * 3600 * 1000);
+  const modules = ['sales', 'purchases', 'banking', 'reports', 'payroll', 'einvoice', 'sync'];
+  await prisma.license.create({
+    data: {
+      companyId,
+      licenseKey: 'TRIAL',
+      payload: { trial: true, companyId, companyName: company.legalNameEn, trn: company.trn, seats: 3, modules, issuedAt: issuedAt.toISOString(), expiresAt: expiresAt.toISOString() },
+      seats: 3,
+      modules,
+      expiresAt,
+    },
+  });
   return { companyId, adminEmail: admin.email, adminPassword };
 }
 

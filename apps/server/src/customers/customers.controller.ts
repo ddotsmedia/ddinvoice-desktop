@@ -1,3 +1,4 @@
+import { RequiresModule } from '../license/license.guard';
 import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Perm, ZodBody } from '../common/decorators';
@@ -6,6 +7,7 @@ import { CreateCustomerSchema, ListCustomersSchema, type CreateCustomerInput } f
 import { CustomersService } from './customers.service';
 
 @ApiTags('customers')
+@RequiresModule('sales')
 @Controller('customers')
 export class CustomersController {
   constructor(@Inject(CustomersService) private readonly customers: CustomersService) {}

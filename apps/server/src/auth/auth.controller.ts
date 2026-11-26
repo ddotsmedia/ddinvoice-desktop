@@ -1,3 +1,4 @@
+import { AllowReadOnly } from '../license/license.guard';
 import { Body, Controller, Get, Headers, Inject, Ip, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -39,6 +40,7 @@ export class AuthController {
   }
 
   @SkipIdempotency()
+  @AllowReadOnly()
   @Post('logout')
   async logout(@CurrentAuth() auth: AuthContext) {
     await this.auth.logout(auth.sessionId);
@@ -55,6 +57,7 @@ export class AuthController {
 
   /** Revokes the refresh token (no further refresh) and closes the session's SSE stream. Access tokens die at the next guard check. */
   @Perm('user.update')
+  @AllowReadOnly()
   @Post('sessions/:id/revoke')
   async revokeSession(@Param('id', ParseUUIDPipe) id: string) {
     const revoked = await this.auth.revokeSession(id);

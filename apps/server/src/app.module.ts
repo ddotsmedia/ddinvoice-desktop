@@ -5,6 +5,9 @@ import type { ServerConfig } from './config';
 import { CoreModule } from './core/core.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtGuard, PermissionGuard } from './auth/auth.guards';
+import { LicenseGuard } from './license/license.guard';
+import { LicenseModule } from './license/license.service';
+import { OpsModule } from './ops/ops.controller';
 import { PairingModule } from './pairing/pairing.module';
 import { PairingGuard } from './pairing/pairing.guard';
 import { HealthModule } from './health/health.module';
@@ -46,12 +49,15 @@ export class AppModule {
         JournalsModule,
         DocumentsModule,
         EventsModule,
+        LicenseModule,
+        OpsModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: PairingGuard },
         { provide: APP_GUARD, useClass: JwtGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
+        { provide: APP_GUARD, useClass: LicenseGuard },
         { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
         { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
         { provide: APP_FILTER, useClass: ApiErrorFilter },

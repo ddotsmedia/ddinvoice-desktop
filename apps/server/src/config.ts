@@ -22,18 +22,28 @@ const ConfigSchema = z.object({
   requirePairing: z.boolean().default(true),
   /** Per-IP request budget per minute (ThrottlerGuard). Raised only by the load test. */
   rateLimitPerMinute: z.number().int().min(1).default(600),
+  /** PostgreSQL client binaries (pg_dump, pg_restore) under the installed app root. */
+  pgBinDir: z.string().min(1).optional(),
+  /** Settings > Backup: extra folder, USB or network path that receives each daily archive. */
+  backupCopyDir: z.string().min(1).optional(),
 });
-export type ServerConfig = z.infer<typeof ConfigSchema>;
+/** Backup key (32 bytes) is injected from secrets.bin at load; never written to server.json. */
+export type ServerConfig = z.infer<typeof ConfigSchema> & { backupKey?: Buffer };
 
 export function parseConfig(raw: unknown): ServerConfig {
   return ConfigSchema.parse(raw);
 }
 
 /** Puts the app-role password into dbUrl and exposes the local token. */
-export function applySecrets(config: ServerConfig, secrets: Pick<Secrets, 'appPassword' | 'localToken'>): ServerConfig {
+export function applySecrets(config: ServerConfig, secrets: Pick<Secrets, 'appPassword' | 'localToken' | 'backupKey'>): ServerConfig {
   const url = new URL(config.dbUrl);
   url.password = secrets.appPassword;
-  return { ...config, dbUrl: url.toString(), localToken: secrets.localToken };
+  return {
+    ...config,
+    dbUrl: url.toString(),
+    localToken: secrets.localToken,
+    backupKey: secrets.backupKey ? Buffer.from(secrets.backupKey, 'base64url') : undefined,
+  };
 }
 
 /**

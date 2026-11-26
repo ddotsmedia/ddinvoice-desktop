@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { restrictAcl } from './acl';
 import { run, type Ctx } from './exec';
 import type { Secrets } from '../secrets';
+import { generateBackupKey } from '../ops/crypto';
 
 export const OWNER = 'ddinvoice_owner';
 export const APP = 'ddinvoice_app';
@@ -11,7 +12,13 @@ export const DB = 'ddinvoice';
 
 export const newSecret = () => randomBytes(32).toString('base64url');
 export function newSecrets(): Secrets {
-  return { postgresPassword: newSecret(), ownerPassword: newSecret(), appPassword: newSecret(), localToken: newSecret() };
+  return {
+    postgresPassword: newSecret(),
+    ownerPassword: newSecret(),
+    appPassword: newSecret(),
+    localToken: newSecret(),
+    backupKey: generateBackupKey().toString('base64url'),
+  };
 }
 
 export const pgBin = (ctx: Pick<Ctx, 'root'>, exe: string) => join(ctx.root, 'vendor', 'pgsql', 'bin', exe);

@@ -4,7 +4,8 @@
                       3,
                       4,
                       5,
-                      6
+                      6,
+                      7
                   ],
     "skipped":  [
 
@@ -54,6 +55,15 @@
                      "costUsd":  0.9042,
                      "attempts":  1,
                      "commit":  "3dffdb5"
+                 },
+                 {
+                     "n":  7,
+                     "model":  "haiku",
+                     "startedAt":  "2026-11-26T15:29:51.8446940+04:00",
+                     "endedAt":  "2026-11-26T15:47:36.3052699+04:00",
+                     "costUsd":  0.8326,
+                     "attempts":  1,
+                     "commit":  "6dcf268"
                  }
              ]
 }

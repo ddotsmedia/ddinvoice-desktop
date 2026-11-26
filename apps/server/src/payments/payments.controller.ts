@@ -1,3 +1,4 @@
+import { RequiresModule } from '../license/license.guard';
 import { Body, Controller, Get, Inject, Module, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Perm, ZodBody } from '../common/decorators';
@@ -8,6 +9,7 @@ import { PaymentsService } from './payments.service';
 import { AllocatePaymentSchema, CreatePaymentSchema, type AllocateInput, type CreatePaymentInput } from './payments.schemas';
 
 @ApiTags('payments')
+@RequiresModule('banking')
 @Controller('payments')
 class PaymentsController {
   constructor(

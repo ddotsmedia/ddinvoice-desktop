@@ -12,7 +12,9 @@ import { ensurePki, fingerprint256, pkiPaths } from './pki';
 import {
   APP, OWNER, createRolesAndDb, dbUrl, initCluster, newSecrets, pgBin, pgData, pgDump, pgRestore, regrant, startPgProcess, stopPgProcess,
 } from './postgres';
-import { SVC_API, SVC_PG, SVC_WORKER, addFirewall, installServices, nodeExe, removeFirewall, restartService, startService, uninstallServices } from './services';
+import { SVC_API, SVC_PG, SVC_WORKER, addFirewall, installServices, nodeExe, removeFirewall, restartService, startService, stopService, uninstallServices } from './services';
+import { restoreArchive } from '../ops/restore';
+import { decodeRecoveryKey, encodeRecoveryKey, generateBackupKey } from '../ops/crypto';
 
 interface Opts {
   flags: Set<string>;
@@ -81,7 +83,7 @@ function loadSecrets(ctx: Ctx): Secrets {
   return readSecrets(paths(ctx).secrets);
 }
 
-function readConfig(ctx: Ctx): { companyId: string; port: number; pgPort: number; service?: boolean; companyName?: string } {
+function readConfig(ctx: Ctx): { companyId: string; port: number; pgPort: number; service?: boolean; companyName?: string; pgBinDir?: string } {
   return JSON.parse(readFileSync(paths(ctx).config, 'utf8')) as never;
 }
 
@@ -175,13 +177,45 @@ export function readSetupInput(file: string | undefined): SetupInput | undefined
   return parsed;
 }
 
+/** Restores an archive into the live database name (the empty one from createRolesAndDb is renamed aside). */
+async function restoreFromArchive(ctx: Ctx, secrets: Secrets, file: string, key: Buffer): Promise<{ companyId: string; companyName: string; previousDatabase?: string }> {
+  const adminUrl = new URL(`postgresql://127.0.0.1:${ctx.pgPort}/postgres`);
+  adminUrl.username = 'postgres';
+  adminUrl.password = secrets.postgresPassword;
+  const p = paths(ctx);
+  const result = await restoreArchive({
+    file,
+    key,
+    pgBinDir: pgBinDirOf(ctx),
+    adminUrl: adminUrl.toString(),
+    ownerUrl: dbUrl(ctx, OWNER, secrets.ownerPassword),
+    appRole: APP,
+    dataDir: ctx.dataDir,
+    root: p.backups,
+    tmpDir: join(p.run, 'tmp'),
+    log: (m) => log(ctx, m),
+  });
+  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl(ctx, OWNER, secrets.ownerPassword) } } });
+  try {
+    const company = await prisma.company.findUniqueOrThrow({ where: { id: result.companyId }, select: { legalNameEn: true } });
+    return { companyId: result.companyId, companyName: company.legalNameEn, previousDatabase: result.previousDatabase };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+const pgBinDirOf = (ctx: Pick<Ctx, 'root'>) => join(ctx.root, 'vendor', 'pgsql', 'bin');
+
 async function installServer(opts: Opts): Promise<void> {
   const noService = opts.flags.has('no-service');
   const ctx = makeCtx(opts, !noService);
   const setup = readSetupInput(opts.values.get('input'));
+  const restoreFile = opts.values.get('restore');
+  const recoveryKeyText = opts.values.get('recovery-key');
   const companyName = setup?.companyNameEn ?? opts.values.get('company-name');
   const adminEmail = setup?.adminEmail ?? opts.values.get('admin-email');
-  if (!companyName || !adminEmail) throw new Error('--company-name and --admin-email are required');
+  if (!restoreFile && (!companyName || !adminEmail)) throw new Error('--company-name and --admin-email are required (or --restore <file>)');
+  if (restoreFile && !recoveryKeyText) throw new Error('--restore needs --recovery-key (printed once when the original PC was installed)');
   if (ctx.service && !isElevated()) throw new Error('install-server must run elevated (Administrator); use --no-service for process mode');
   if (existsSync(paths(ctx).config)) throw new Error(`Already installed at ${ctx.dataDir}; run uninstall-server first`);
   for (const f of [pgBin(ctx, 'initdb.exe'), nodeExe(ctx)]) if (!existsSync(f)) throw new Error(`Missing ${f}; run pnpm vendor`);
@@ -198,6 +232,8 @@ async function installServer(opts: Opts): Promise<void> {
 
   log(ctx, '1/8 secrets');
   const secrets = newSecrets();
+  // New-PC recovery adopts the original PC's backup key; a fresh install keeps the generated one and shows it once below.
+  if (recoveryKeyText) secrets.backupKey = decodeRecoveryKey(recoveryKeyText).toString('base64url');
   writeFileSync(p.secrets, dpapiProtect(JSON.stringify(secrets)));
   restrictAcl(p.secrets, user);
 
@@ -209,24 +245,35 @@ async function installServer(opts: Opts): Promise<void> {
   log(ctx, '3/8 tls');
   const pki = ensurePki(ctx.dataDir, { extraSids: user });
 
-  log(ctx, '4/8 migrate (with pre-migrate backup)');
-  if (!migrateSafely(ctx, secrets)) throw new Error('migration failed; see logs/setup.log');
-
-  log(ctx, '5/8 seed company, chart of accounts, admin');
-  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl(ctx, OWNER, secrets.ownerPassword) } } });
   let companyId: string;
-  let adminPassword: string;
-  try {
-    const r = await seedDemo(prisma, setup?.adminPassword, {
-      legalNameEn: companyName,
-      legalNameAr: setup?.companyNameAr,
-      trn: setup?.trn,
-      emirate: setup?.emirate,
-      adminEmail,
-    });
-    ({ companyId, adminPassword } = r);
-  } finally {
-    await prisma.$disconnect();
+  let companyNameOut: string;
+  let adminPassword: string | undefined;
+  if (restoreFile) {
+    log(ctx, '4/8 restore archive (recovery mode: external outbox stays paused)');
+    const restored = await restoreFromArchive(ctx, secrets, restoreFile, Buffer.from(secrets.backupKey!, 'base64url'));
+    companyId = restored.companyId;
+    companyNameOut = restored.companyName;
+    log(ctx, '4/8 migrate to this version (with pre-migrate backup)');
+    if (!migrateSafely(ctx, secrets)) throw new Error('migration failed after restore; see logs/setup.log');
+  } else {
+    log(ctx, '4/8 migrate (with pre-migrate backup)');
+    if (!migrateSafely(ctx, secrets)) throw new Error('migration failed; see logs/setup.log');
+
+    log(ctx, '5/8 seed company, chart of accounts, admin, 30-day trial');
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl(ctx, OWNER, secrets.ownerPassword) } } });
+    try {
+      const r = await seedDemo(prisma, setup?.adminPassword, {
+        legalNameEn: companyName,
+        legalNameAr: setup?.companyNameAr,
+        trn: setup?.trn,
+        emirate: setup?.emirate,
+        adminEmail,
+      });
+      ({ companyId, adminPassword } = r);
+    } finally {
+      await prisma.$disconnect();
+    }
+    companyNameOut = companyName!;
   }
 
   log(ctx, '6/8 write server.json');
@@ -243,7 +290,8 @@ async function installServer(opts: Opts): Promise<void> {
         caPath: pki.caCert,
         secretsPath: p.secrets,
         companyId,
-        companyName,
+        companyName: companyNameOut,
+        pgBinDir: pgBinDirOf(ctx),
         requirePairing: true,
         service: ctx.service,
       },
@@ -266,10 +314,59 @@ async function installServer(opts: Opts): Promise<void> {
 
   log(ctx, '8/8 wait for health');
   await waitHealthy(ctx);
-  log(ctx, `INSTALLED company=${companyName} companyId=${companyId} port=${ctx.port}`);
+  log(ctx, `INSTALLED company=${companyNameOut} companyId=${companyId} port=${ctx.port}`);
   log(ctx, `CA SHA-256 fingerprint: ${pki.caFingerprint}`);
-  // The wizard supplied the password itself; only a generated one is printed (once).
-  if (!setup) process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
+  // Printed once, to stdout only (never the log file). The wizard supplied its own password, so only a generated one is shown.
+  if (!restoreFile && !setup) process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
+  if (!recoveryKeyText) {
+    // Store it outside this PC: it is the only way to open a backup on another PC.
+    process.stdout.write(`Backup recovery key (shown once, keep it outside this PC): ${encodeRecoveryKey(Buffer.from(secrets.backupKey!, 'base64url'))}\n`);
+  }
+}
+
+/** Existing install: restore an archive on this PC. Stops the API and worker, restores, starts them again in recovery mode. */
+async function restoreCmd(opts: Opts): Promise<void> {
+  const ctx = makeCtx(opts, false);
+  const file = opts.values.get('file');
+  if (!file) throw new Error('restore needs --file <archive.ddbk>');
+  const cfg = readConfig(ctx);
+  ctx.port = cfg.port;
+  ctx.pgPort = cfg.pgPort;
+  const secrets = loadSecrets(ctx);
+  const recoveryKeyText = opts.values.get('recovery-key');
+  const key = recoveryKeyText ? decodeRecoveryKey(recoveryKeyText) : Buffer.from(secrets.backupKey ?? '', 'base64url');
+  if (key.length !== 32) throw new Error('no backup key on this PC; pass --recovery-key');
+  if (cfg.service) {
+    stopService(ctx, SVC_WORKER);
+    stopService(ctx, SVC_API);
+  } else stopApp(ctx);
+  try {
+    const r = await restoreFromArchive(ctx, secrets, file, key);
+    log(ctx, `restored company=${r.companyName} companyId=${r.companyId}; RECOVERY MODE: review pending external jobs in Settings > Server health, then Release`);
+    if (r.previousDatabase) log(ctx, `previous database kept as ${r.previousDatabase} (remove manually when satisfied)`);
+  } finally {
+    if (cfg.service) {
+      startService(ctx, SVC_WORKER);
+      startService(ctx, SVC_API);
+    } else startApp(ctx);
+  }
+}
+
+/** Existing installs made before backups: generates the backup key once and prints its recovery key. */
+async function backupKeyCmd(opts: Opts): Promise<void> {
+  const ctx = makeCtx(opts, false);
+  const cfg = readConfig(ctx);
+  const secrets = loadSecrets(ctx);
+  if (secrets.backupKey) throw new Error('a backup key already exists; it cannot be shown again (keep the recovery key you saved)');
+  secrets.backupKey = generateBackupKey().toString('base64url');
+  writeFileSync(paths(ctx).secrets, dpapiProtect(JSON.stringify(secrets)));
+  restrictAcl(paths(ctx).secrets, cfg.service ? [] : [currentSid()]);
+  if (!cfg.pgBinDir) {
+    const next = { ...(cfg as object), pgBinDir: pgBinDirOf(ctx) } as Record<string, unknown>;
+    writeFileSync(paths(ctx).config, JSON.stringify(next, null, 2));
+  }
+  process.stdout.write(`Backup recovery key (shown once, keep it outside this PC): ${encodeRecoveryKey(Buffer.from(secrets.backupKey, 'base64url'))}\n`);
+  log(ctx, 'backup key created; restart the services so the worker picks it up');
 }
 
 async function uninstallServer(opts: Opts): Promise<void> {
@@ -347,6 +444,9 @@ async function pairingCode(opts: Opts): Promise<void> {
 
 const HELP = `ddinvoice-setup <command> [options]
   install-server --company-name <n> --admin-email <e> [--no-service] [--data-dir <p>] [--port 47820] [--pg-port 47821]
+  install-server --restore <file.ddbk> --recovery-key <key> [--no-service]   new-PC recovery
+  restore --file <file.ddbk> [--recovery-key <key>]                         restore on this PC (recovery mode)
+  backup-key                                                                 legacy installs: create the backup key once
   uninstall-server [--delete-data] [--data-dir <p>]
   status | migrate | rotate-cert | pairing-code   [--data-dir <p>]`;
 
@@ -359,6 +459,8 @@ export async function main(argv: string[]): Promise<void> {
     case 'migrate': return migrate(opts);
     case 'rotate-cert': return rotateCert(opts);
     case 'pairing-code': return pairingCode(opts);
+    case 'restore': return restoreCmd(opts);
+    case 'backup-key': return backupKeyCmd(opts);
     default: process.stdout.write(`${HELP}\n`);
   }
 }

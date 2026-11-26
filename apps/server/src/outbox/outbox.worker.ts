@@ -1,3 +1,5 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CONFIG, OUTBOX_HANDLERS } from '../core/tokens';
 import type { ServerConfig } from '../config';
@@ -49,9 +51,23 @@ export class OutboxWorker {
     if (this.timer) clearInterval(this.timer);
   }
 
+  /** Written every pass; the server's health screen reads its age to show the worker state. */
+  private async heartbeat(now: Date): Promise<void> {
+    try {
+      await mkdir(join(this.config.dataDir, 'run'), { recursive: true });
+      await writeFile(join(this.config.dataDir, 'run', 'worker.heartbeat'), now.toISOString());
+    } catch {
+      // best effort: a missing heartbeat only shows the worker as down
+    }
+  }
+
   /** One polling pass. Returns the number of jobs handled (done or rescheduled). */
   async tick(now = new Date(), batch = 10): Promise<number> {
     const companyId = this.config.companyId;
+    await this.heartbeat(now);
+    // RECOVERY MODE (after a restore): external rows (einvoice, sync, email) are not claimed until the owner releases them.
+    const company = await this.prisma.client.company.findUnique({ where: { id: companyId }, select: { recoveryMode: true } });
+    const paused = company?.recoveryMode ?? false;
     const jobs = await this.prisma.client.$queryRaw<OutboxJob[]>`
       UPDATE "Outbox" SET status = 'PROCESSING', "leaseUntil" = ${new Date(now.getTime() + LEASE_MS)}, "updatedAt" = now()
       WHERE id IN (
@@ -61,6 +77,7 @@ export class OutboxWorker {
             (status = 'PENDING' AND "nextAttemptAt" <= ${now})
             OR (status = 'PROCESSING' AND "leaseUntil" < ${now})
           )
+          AND ("external" = false OR ${paused} = false)
         ORDER BY "nextAttemptAt" ASC
         LIMIT ${batch}
         FOR UPDATE SKIP LOCKED

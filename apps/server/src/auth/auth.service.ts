@@ -5,6 +5,8 @@ import { verify as verifyTotp } from 'otplib';
 import { ErrorCode } from '@ddinvoice/contracts';
 import { sha256Hex } from '../common/canonical';
 import { ApiException } from '../common/api-exception';
+import { withSerializable } from '../common/transactions';
+import { LicenseService } from '../license/license.service';
 import type { Permission } from '@ddinvoice/contracts';
 import { CONFIG } from '../core/tokens';
 import type { ServerConfig } from '../config';
@@ -32,6 +34,7 @@ export class AuthService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CONFIG) private readonly config: ServerConfig,
     @Inject(TokenService) private readonly tokens: TokenService,
+    @Inject(LicenseService) private readonly licenses: LicenseService,
   ) {}
 
   private get db() {
@@ -82,17 +85,27 @@ export class AuthService {
 
     const sessionId = randomUUID();
     const { secret, hash } = this.tokens.newRefreshSecret();
-    await db.session.create({
-      data: {
-        companyId: this.config.companyId,
-        id: sessionId,
-        userId: user.id,
-        deviceId: device.id,
-        refreshTokenHash: hash,
-        expiresAt: new Date(now.getTime() + REFRESH_TTL_MS),
-        ip: meta.ip,
-        userAgent: meta.userAgent,
-      },
+    const license = await this.licenses.current(now);
+    // A seat is one signed-in user on one device. Further sessions of a seat already in use are free (no revocation).
+    await withSerializable(db, async (tx) => {
+      const live = await tx.session.findMany({ where: { revokedAt: null, expiresAt: { gt: now } }, select: { userId: true, deviceId: true } });
+      const seats = new Set(live.map((r) => `${r.userId}|${r.deviceId}`));
+      // seats 0 = no license installed: nobody is seat-limited, the app is read-only anyway (owner can install one).
+      if (license.seats > 0 && !seats.has(`${user.id}|${device.id}`) && seats.size >= license.seats) {
+        throw new ApiException(403, ErrorCode.SeatLimit, `All ${license.seats} seats are in use; sign out another device first`);
+      }
+      await tx.session.create({
+        data: {
+          companyId: this.config.companyId,
+          id: sessionId,
+          userId: user.id,
+          deviceId: device.id,
+          refreshTokenHash: hash,
+          expiresAt: new Date(now.getTime() + REFRESH_TTL_MS),
+          ip: meta.ip,
+          userAgent: meta.userAgent,
+        },
+      });
     });
     return this.issue(user.id, sessionId, secret);
   }

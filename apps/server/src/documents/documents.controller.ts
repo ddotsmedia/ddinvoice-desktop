@@ -1,3 +1,4 @@
+import { AllowReadOnly } from '../license/license.guard';
 import { Body, Controller, Get, Inject, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { DocType } from '@ddinvoice/documents';
@@ -25,6 +26,7 @@ export class DocumentsController {
   @Perm('document.read')
   @SkipIdempotency()
   @ZodBody(PreviewSchema)
+  @AllowReadOnly()
   @Post('preview')
   preview(@Body(new ZodPipe(PreviewSchema)) body: PreviewInput) {
     return this.docs.preview(body);

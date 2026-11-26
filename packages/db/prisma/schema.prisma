@@ -123,6 +123,8 @@ model Company {
   einvoiceEnabled Boolean @default(false)
   einvoiceFrom DateTime?
   settings Json @default("{}")
+  /// Set when a backup is restored: external outbox rows (einvoice, sync, email) stay paused until the owner releases them.
+  recoveryMode Boolean @default(false)
 
   @@unique([trn])
 }

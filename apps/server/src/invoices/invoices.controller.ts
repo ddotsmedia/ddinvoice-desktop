@@ -1,3 +1,4 @@
+import { RequiresModule } from '../license/license.guard';
 import {
   Body,
   Controller,
@@ -37,6 +38,7 @@ export function parseIfMatch(header: string | undefined): number {
 }
 
 @ApiTags('invoices')
+@RequiresModule('sales')
 @Controller('invoices')
 export class InvoicesController {
   constructor(

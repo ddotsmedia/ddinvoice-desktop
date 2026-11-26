@@ -103,6 +103,9 @@ export function installServices(ctx: Ctx, configPath: string): void {
 export function startService(ctx: Ctx, id: string): void {
   run(wrapper(ctx, id), ['start']);
 }
+export function stopService(ctx: Ctx, id: string): void {
+  run(wrapper(ctx, id), ['stop']);
+}
 export function restartService(ctx: Ctx, id: string): void {
   run(wrapper(ctx, id), ['restart']);
 }

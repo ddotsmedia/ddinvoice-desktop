@@ -1,3 +1,4 @@
+import { RequiresModule } from '../license/license.guard';
 import { Body, Controller, Get, Inject, Module, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
@@ -9,6 +10,7 @@ import { CreateQuoteSchema, UpdateQuoteSchema, type CreateQuoteInput, type Updat
 const ListSchema = z.object({ status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED']).optional() });
 
 @ApiTags('quotes')
+@RequiresModule('sales')
 @Controller('quotes')
 class QuotesController {
   constructor(@Inject(QuotesService) private readonly quotes: QuotesService) {}

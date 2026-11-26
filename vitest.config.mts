@@ -8,6 +8,8 @@ export default defineConfig({
   },
   test: {
     globalSetup: ['packages/db/tests/global-setup.ts'],
+    // One shared database: run files sequentially so SERIALIZABLE conflicts are not cross-test noise.
+    fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 120_000,
   },

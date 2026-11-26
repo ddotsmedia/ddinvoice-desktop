@@ -1,0 +1,1565 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [
+          {
+            "name": "user-agent",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "deviceId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "appVersion": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "totp": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "deviceId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [
+          {
+            "name": "user-agent",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "refreshToken"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/system/version": {
+      "get": {
+        "operationId": "SystemController_version",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/customers": {
+      "post": {
+        "operationId": "CustomersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "nameEn": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "nameAr": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "trn": {
+                    "type": "string",
+                    "pattern": "^\\d{15}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 32
+                  },
+                  "addressEn": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "addressAr": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "emirate": {
+                    "type": "string",
+                    "enum": [
+                      "ABU_DHABI",
+                      "DUBAI",
+                      "SHARJAH",
+                      "AJMAN",
+                      "UMM_AL_QUWAIN",
+                      "RAS_AL_KHAIMAH",
+                      "FUJAIRAH"
+                    ]
+                  },
+                  "country": {
+                    "default": "AE",
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "paymentTermsDays": {
+                    "default": 30,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 365
+                  },
+                  "creditLimit": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,4})?$"
+                  },
+                  "receivableAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "code",
+                  "nameEn",
+                  "nameAr",
+                  "email",
+                  "phone",
+                  "addressEn",
+                  "addressAr",
+                  "receivableAccountId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "customers"
+        ]
+      },
+      "get": {
+        "operationId": "CustomersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "CustomersController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "customers"
+        ]
+      }
+    },
+    "/periods": {
+      "post": {
+        "operationId": "PeriodsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "periods"
+        ]
+      },
+      "get": {
+        "operationId": "PeriodsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "periods"
+        ]
+      }
+    },
+    "/periods/{id}/lock": {
+      "post": {
+        "operationId": "PeriodsController_lock",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "periods"
+        ]
+      }
+    },
+    "/accounts": {
+      "get": {
+        "operationId": "ReferenceController_accounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reference"
+        ]
+      }
+    },
+    "/tax-codes": {
+      "get": {
+        "operationId": "ReferenceController_taxCodes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "reference"
+        ]
+      }
+    },
+    "/invoices": {
+      "post": {
+        "operationId": "InvoicesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                  },
+                  "supplyDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "notes": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "terms": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "qty": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "unitPrice": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "discountPct": {
+                          "type": "string",
+                          "pattern": "^\\d{1,3}(\\.\\d{1,6})?$"
+                        },
+                        "discountAmt": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "taxCodeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "qty"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "customerId",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      },
+      "get": {
+        "operationId": "InvoicesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/invoices/{id}": {
+      "get": {
+        "operationId": "InvoicesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      },
+      "patch": {
+        "operationId": "InvoicesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "branchId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                  },
+                  "supplyDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "notes": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "terms": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "qty": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "unitPrice": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "discountPct": {
+                          "type": "string",
+                          "pattern": "^\\d{1,3}(\\.\\d{1,6})?$"
+                        },
+                        "discountAmt": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "taxCodeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "qty"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      },
+      "delete": {
+        "operationId": "InvoicesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/invoices/{id}/issue": {
+      "post": {
+        "operationId": "InvoicesController_issue",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/invoices/{id}/mark-sent": {
+      "post": {
+        "operationId": "InvoicesController_markSent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/credit-notes": {
+      "post": {
+        "operationId": "CreditNotesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "qty": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "unitPrice": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "discountPct": {
+                          "type": "string",
+                          "pattern": "^\\d{1,3}(\\.\\d{1,6})?$"
+                        },
+                        "discountAmt": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "taxCodeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "qty"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "invoiceId",
+                  "reason",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credit-notes"
+        ]
+      },
+      "get": {
+        "operationId": "CreditNotesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credit-notes"
+        ]
+      }
+    },
+    "/credit-notes/{id}": {
+      "get": {
+        "operationId": "CreditNotesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credit-notes"
+        ]
+      }
+    },
+    "/credit-notes/{id}/issue": {
+      "post": {
+        "operationId": "CreditNotesController_issue",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "credit-notes"
+        ]
+      }
+    },
+    "/quotes": {
+      "post": {
+        "operationId": "QuotesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "notes": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "terms": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "qty": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "unitPrice": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "discountPct": {
+                          "type": "string",
+                          "pattern": "^\\d{1,3}(\\.\\d{1,6})?$"
+                        },
+                        "discountAmt": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "taxCodeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "qty"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "customerId",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      },
+      "get": {
+        "operationId": "QuotesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      }
+    },
+    "/quotes/{id}": {
+      "get": {
+        "operationId": "QuotesController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      },
+      "patch": {
+        "operationId": "QuotesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                  },
+                  "validUntil": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "notes": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "terms": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "qty": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "unitPrice": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "discountPct": {
+                          "type": "string",
+                          "pattern": "^\\d{1,3}(\\.\\d{1,6})?$"
+                        },
+                        "discountAmt": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "taxCodeId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "qty"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      }
+    },
+    "/quotes/{id}/send": {
+      "post": {
+        "operationId": "QuotesController_send",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      }
+    },
+    "/quotes/{id}/revise": {
+      "post": {
+        "operationId": "QuotesController_revise",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      }
+    },
+    "/quotes/{id}/accept": {
+      "post": {
+        "operationId": "QuotesController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "quotes"
+        ]
+      }
+    },
+    "/payments": {
+      "post": {
+        "operationId": "PaymentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "CASH",
+                      "BANK",
+                      "CARD",
+                      "CHEQUE"
+                    ]
+                  },
+                  "bankAccountId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                  },
+                  "currency": {
+                    "default": "AED",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "reference": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "allocations": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "invoiceId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        }
+                      },
+                      "required": [
+                        "invoiceId",
+                        "amount"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "customerId",
+                  "date",
+                  "method",
+                  "bankAccountId",
+                  "amount"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/payments/{id}": {
+      "get": {
+        "operationId": "PaymentsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/payments/{id}/allocate": {
+      "post": {
+        "operationId": "PaymentsController_allocate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "allocations": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "invoiceId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "amount": {
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        }
+                      },
+                      "required": [
+                        "invoiceId",
+                        "amount"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/payments/{id}/reverse": {
+      "post": {
+        "operationId": "PaymentsController_reverse",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/journals": {
+      "post": {
+        "operationId": "JournalsController_post",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "memo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "lines": {
+                    "minItems": 2,
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "accountId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "debit": {
+                          "default": "0",
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "credit": {
+                          "default": "0",
+                          "type": "string",
+                          "pattern": "^\\d{1,14}(\\.\\d{1,6})?$"
+                        },
+                        "description": {
+                          "default": "",
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "required": [
+                        "accountId"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "date",
+                  "memo",
+                  "lines"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "journals"
+        ]
+      }
+    },
+    "/journals/{id}/reverse": {
+      "post": {
+        "operationId": "JournalsController_reverse",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "journals"
+        ]
+      }
+    },
+    "/journals/{id}": {
+      "get": {
+        "operationId": "JournalsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "journals"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "DDInvoice Local API",
+    "description": "Local API on the server PC. Commands require Idempotency-Key; invoices require If-Match on PATCH.",
+    "version": "0.4.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {}
+  }
+}

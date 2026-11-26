@@ -5,16 +5,24 @@ export enum ErrorCode {
   Forbidden = 'FORBIDDEN',
   NotFound = 'NOT_FOUND',
   ValidationFailed = 'VALIDATION_FAILED',
+  Conflict = 'CONFLICT',
   IdempotencyConflict = 'IDEMPOTENCY_CONFLICT',
+  PreconditionFailed = 'PRECONDITION_FAILED',
+  InvalidCredentials = 'INVALID_CREDENTIALS',
+  MfaRequired = 'MFA_REQUIRED',
+  AccountLocked = 'ACCOUNT_LOCKED',
+  RateLimited = 'RATE_LIMITED',
   ImmutableRecord = 'IMMUTABLE_RECORD',
+  PeriodLocked = 'PERIOD_LOCKED',
+  IllegalTransition = 'ILLEGAL_TRANSITION',
   JournalUnbalanced = 'JOURNAL_UNBALANCED',
   Internal = 'INTERNAL',
 }
 
+/** Domain rule failures (from @ddinvoice/domain) use their own string codes; this schema accepts both. */
 export const ApiErrorSchema = z.object({
-  code: z.nativeEnum(ErrorCode),
+  code: z.string(),
   message: z.string(),
-  details: z.unknown().optional(),
-  requestId: z.string().optional(),
+  fields: z.record(z.string(), z.string()).optional(),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;

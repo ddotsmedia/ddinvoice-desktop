@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@ddinvoice/contracts": "workspace:*",
-    "@prisma/client": "6.19.3"
+    "@prisma/client": "6.19.3",
+    "argon2": "0.45.2"
   },
   "devDependencies": {
     "embedded-postgres": "16.13.0-beta.17",

@@ -10,6 +10,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "openapi-fetch": "0.17.0",
     "zod": "4.6.7"
   }
 }

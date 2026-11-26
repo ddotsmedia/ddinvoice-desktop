@@ -25,3 +25,19 @@
 2026-11-26 | Scope extension injects companyId (does not just require it); conflicting explicit companyId throws; nested writes not rewritten | rule 8 enforcement
 2026-11-26 | DB tests skipped on Windows CI (Postgres refuses Administrator); separate ubuntu 'db' job uses postgres:16 service via TEST_DATABASE_URL | runner constraint
 2026-11-26 | Allow @embedded-postgres/linux-x64 build in pnpm-workspace.yaml allowBuilds | pnpm 12 ERR_PNPM_IGNORED_BUILDS failed CI db job on linux (only windows-x64 was allowed)
+2026-11-26 | Server passwords use argon2id (argon2 0.45.2); seed rehashed from scrypt | spec requires argon2id; seed and login must use one format
+2026-11-26 | Issue/send/payment/reverse run through an in-process FIFO per company, with SERIALIZABLE + 3 retries as backstop | 20 parallel issues exceed 3 DB retries under contention; queue serializes, DB keeps correctness
+2026-11-26 | Root vitest runs test files sequentially (fileParallelism false) | SERIALIZABLE conflicts appeared between tenants sharing one test database
+2026-11-26 | Idempotency-Key reserved as PENDING before the handler, released on error; required on POST/PATCH/DELETE; auth endpoints skip it | concurrent duplicate cannot create a second record; rule 6 covers DELETE too
+2026-11-26 | AuditEvent written by interceptor after the command commits | spec asks for an interceptor; trade-off: audit row is a separate write after commit
+2026-11-26 | HTTPS required in production (certPath/keyPath); plain HTTP allowed only outside production | spec says HTTPS; dev needs no certificate
+2026-11-26 | Config from %PROGRAMDATA%DDInvoiceserver.json; .env.local fallback only when NODE_ENV is not production | spec; keeps secrets out of repo
+2026-11-26 | Access JWT EdDSA (jose) with Ed25519 key in dataDir/keys; refresh token <sessionId>.<secret>, only sha256 stored; reuse revokes session | rotation with reuse detection; no secret at rest
+2026-11-26 | Period must be open and cover the Dubai business date to post; otherwise PERIOD_LOCKED (422) | rule 7 and locked-period trigger; application check first for a clear error
+2026-11-26 | Payments AED-only in this pass; allocation oldest-first unless allocations given; overpayment stays unallocated | foreign-currency allocation deferred; keeps AR math exact
+2026-11-26 | Manual journals post directly (no draft state) | journal table has no status; draft needs a schema change, deferred
+2026-11-26 | Quote revision = new DRAFT row with revision+1 and same number | Quote unique(number, revision) already in schema
+2026-11-26 | Invoice journal uses one VAT output account across taxable lines | domain buildInvoiceJournal takes a single vatOutput account
+2026-11-26 | Settlement = total less issued credit notes vs amountPaid; openBalance exposed on invoices | credit notes reduce open balance without a new table
+2026-11-26 | Outbox stub handlers (document.render, einvoice.submit) succeed; retries 10 attempts, backoff 10s doubling, cap 1h | render and e-invoice land in Prompts 6 and 11
+2026-11-26 | Server version 0.4.0 (desktop too) | minor bump per rule 15 for Prompt 3

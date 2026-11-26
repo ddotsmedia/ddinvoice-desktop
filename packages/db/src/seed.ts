@@ -1,10 +1,11 @@
-import { randomBytes, scryptSync } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
 import { ROLE_PERMISSIONS } from '@ddinvoice/contracts';
 
-export function hashPassword(pw: string): string {
-  const salt = randomBytes(16);
-  return `scrypt$${salt.toString('hex')}$${scryptSync(pw, salt, 64).toString('hex')}`;
+/** argon2id; the server's login verifies with the same format. */
+export function hashPassword(pw: string): Promise<string> {
+  return argon2.hash(pw, { type: argon2.argon2id });
 }
 
 type AT = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
@@ -22,10 +23,14 @@ const COA: [string, string, string, AT, boolean?][] = [
   ['6900', 'Miscellaneous', 'مصروفات متنوعة', 'EXPENSE'],
 ];
 
-export async function seedDemo(prisma: PrismaClient, adminPassword = randomBytes(12).toString('base64url')) {
+export async function seedDemo(
+  prisma: PrismaClient,
+  adminPassword = randomBytes(12).toString('base64url'),
+  opts: { trn?: string } = {},
+) {
   const company = await prisma.company.create({
     data: {
-      legalNameEn: 'Demo Trading LLC', legalNameAr: 'ديمو للتجارة ذ.م.م', trn: '100000000000003', tradeLicenseNo: 'DEMO-0001',
+      legalNameEn: 'Demo Trading LLC', legalNameAr: 'ديمو للتجارة ذ.م.م', trn: opts.trn ?? '100000000000003', tradeLicenseNo: 'DEMO-0001',
       emirate: 'DUBAI', addressEn: 'Demo Street, Dubai, UAE', addressAr: 'شارع ديمو، دبي، الإمارات',
     },
   });
@@ -61,7 +66,7 @@ export async function seedDemo(prisma: PrismaClient, adminPassword = randomBytes
     roles[name] = (await prisma.role.create({ data: { companyId, name, permissions } })).id;
   }
   const admin = await prisma.user.create({
-    data: { companyId, email: 'admin@demo.local', nameEn: 'Demo Admin', passwordHash: hashPassword(adminPassword) },
+    data: { companyId, email: 'admin@demo.local', nameEn: 'Demo Admin', passwordHash: await hashPassword(adminPassword) },
   });
   await prisma.userRole.create({ data: { companyId, userId: admin.id, roleId: roles.owner! } });
   return { companyId, adminEmail: admin.email, adminPassword };

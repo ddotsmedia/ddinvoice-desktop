@@ -4,6 +4,7 @@ import { companyScope, scoped, ScopeError, SCOPED_MODELS } from '../src/scope';
 import { seedDemo } from '../src/seed';
 
 const prisma = new PrismaClient();
+const d = describe.skipIf(!!process.env.DD_SKIP_DB_TESTS);
 let companyId = '';
 let cash = '';
 let sales = '';
@@ -12,6 +13,7 @@ let n = 0;
 const uniq = () => `T${++n}-${Date.now()}`;
 
 beforeAll(async () => {
+  if (process.env.DD_SKIP_DB_TESTS) return;
   ({ companyId } = await seedDemo(prisma, 'test-password'));
   cash = (await prisma.account.findFirstOrThrow({ where: { companyId, code: '1000' } })).id;
   sales = (await prisma.account.findFirstOrThrow({ where: { companyId, code: '4000' } })).id;
@@ -45,7 +47,7 @@ const invoice = (status: 'DRAFT' | 'ISSUED') =>
     },
   });
 
-describe('seed', () => {
+d('seed', () => {
   it('creates chart, tax codes, sequences, roles', async () => {
     expect(await prisma.account.count({ where: { companyId } })).toBeGreaterThanOrEqual(20);
     expect((await prisma.taxCode.findMany({ where: { companyId } })).map((t) => t.code).sort()).toEqual(['EX', 'OOS', 'RC', 'SR', 'ZR']);
@@ -54,7 +56,7 @@ describe('seed', () => {
   });
 });
 
-describe('integrity triggers', () => {
+d('integrity triggers', () => {
   it('accepts a balanced journal and rejects an unbalanced one', async () => {
     await expect(journal('2026-03-01', '10.0000', '10.0000')).resolves.toBeTruthy();
     await expect(journal('2026-03-01', '10.0000', '9.9999')).rejects.toThrow(/unbalanced/);
@@ -92,7 +94,7 @@ describe('integrity triggers', () => {
   });
 });
 
-describe('company scope extension', () => {
+d('company scope extension', () => {
   it('throws without companyId', () => {
     expect(() => companyScope('')).toThrow(ScopeError);
     expect(() => scoped(prisma, undefined as unknown as string)).toThrow(ScopeError);

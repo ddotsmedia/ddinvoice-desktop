@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           V=$(node -p "require('./apps/desktop/package.json').version")
           TAG="v${V}-pilot.${RUN_NUMBER}"
-          PREV=$(gh release list --limit 50 --json tagName -q '.[].tagName' | grep -- '-pilot.' | head -n1 || true)
+          PREV=$(gh release list --limit 50 --json tagName -q '.[].tagName' | grep -- '-pilot[.]' | head -n1 || true)
           mkdir -p assets
           cp release/DDInvoice-Setup-*.exe release/DDInvoice-Setup-*.exe.blockmap release/latest.yml assets/
           cp release/latest.yml assets/pilot.yml

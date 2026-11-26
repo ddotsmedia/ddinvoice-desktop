@@ -33,6 +33,13 @@ module.exports = {
     { from: path.join(root, 'vendor', 'pgsql'), to: 'vendor/pgsql' },
     { from: path.join(root, 'vendor', 'winsw'), to: 'vendor/winsw' },
   ],
+  // extraResources drops every node_modules folder; the server needs dist/node_modules (argon2) and dist/prisma-cli/node_modules.
+  afterPack: (ctx) => {
+    const fs = require('node:fs');
+    for (const rel of ['node_modules', path.join('prisma-cli', 'node_modules')]) {
+      fs.cpSync(path.join(root, 'dist', rel), path.join(ctx.appOutDir, 'resources', 'dist', rel), { recursive: true, dereference: true });
+    }
+  },
   win,
   nsis: {
     oneClick: false,

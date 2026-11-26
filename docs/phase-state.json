@@ -1,6 +1,7 @@
 ﻿{
     "completed":  [
                       1,
+                      2,
                       3,
                       4,
                       5,
@@ -8,7 +9,10 @@
                       7
                   ],
     "skipped":  [
-
+                     {
+                         "n":  15,
+                         "reason":  "payroll inputs missing"
+                     }
                 ],
     "runs":  [
                  {

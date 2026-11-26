@@ -2,7 +2,8 @@
 param([string]$Installer = (Get-ChildItem (Join-Path $PSScriptRoot '..\..\release') -Filter 'DDInvoice-Setup-*.exe' | Where-Object Name -notmatch '__uninstaller' | Select-Object -First 1 -ExpandProperty FullName))
 $ErrorActionPreference = 'Stop'
 $data = Join-Path $env:ProgramData 'DDInvoice'
-$dir = Join-Path $env:TEMP ('ddinv-install-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+# Not under a user profile: the services run as LocalService, which cannot read C:Users<user>AppData.
+$dir = Join-Path $env:SystemDrive ('ddinv-install-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $id = [Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not (New-Object Security.Principal.WindowsPrincipal($id)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { Write-Host 'SMOKE SKIPPED: needs elevation'; exit 2 }
 if (Test-Path (Join-Path $data 'server.json')) { Write-Host "SMOKE REFUSED: $data already has an install"; exit 3 }
@@ -28,6 +29,7 @@ try {
 } catch {
   $fail = $_
   foreach ($l in 'install-out.log', 'logs\setup.log', 'logs\server.log') { $lf = Join-Path $data $l; if (Test-Path $lf) { Write-Host "--- $l (tail)"; Get-Content $lf -Tail 40 } }
+  Get-ChildItem (Join-Path $data 'services') -Filter '*.log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "--- $($_.Name)"; Get-Content $_.FullName -Tail 20 }
 }
 finally {
   # Test cleanup of this run's own temp install data only.

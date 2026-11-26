@@ -238,7 +238,8 @@ async function installServer(opts: Opts): Promise<void> {
   const during = [installer];
   restrictAcl(p.backups, user);
   restrictAcl(p.run, during);
-  restrictAcl(p.logs, during);
+  // PostgreSQL's service runs as LocalService and its WinSW wrapper writes logs here.
+  restrictAcl(p.logs, ctx.service ? [...during, 'S-1-5-19'] : during);
 
   log(ctx, '1/8 secrets');
   const secrets = newSecrets();

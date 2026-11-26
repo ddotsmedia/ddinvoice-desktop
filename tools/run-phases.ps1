@@ -1,5 +1,5 @@
 # Unattended sequential runner for the phase prompts in docs/PHASES.md (Prompt 0c).
-# Windows PowerShell 5.1 compatible. Never runs reset, clean, force or delete.
+# Windows PowerShell 5.1 compatible. Never runs reset, clean, force or delete (except removing its own logs/runner.lock).
 param(
   [int]$From = 1,
   [int]$To = 16,
@@ -14,10 +14,11 @@ Set-Location -LiteralPath $Root
 $StatePath = Join-Path $Root 'docs\phase-state.json'
 $ReportPath = Join-Path $Root 'docs\RUN-REPORT.md'
 $LogDir = Join-Path $Root 'logs'
+$LockPath = Join-Path $LogDir 'runner.lock'
 
 function Stop-Run([string]$Msg) {
   Write-Host "STOP: $Msg" -ForegroundColor Red
-  exit 1
+  throw 'runner-stop'  # caught at the bottom; finally releases the lock
 }
 
 function Get-Phases {
@@ -119,7 +120,21 @@ if ($DryRun) {
   exit 0
 }
 
+# ---- Single-instance lock ----
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+if (Test-Path -LiteralPath $LockPath) {
+  $oldPid = (Get-Content -LiteralPath $LockPath -Raw).Trim()
+  if ($oldPid -match '^\d+$' -and (Get-Process -Id ([int]$oldPid) -ErrorAction SilentlyContinue)) {
+    Write-Host "Runner already running (PID $oldPid)" -ForegroundColor Red
+    exit 1
+  }
+  Write-Host "Removing stale lock (PID $oldPid)" -ForegroundColor Yellow
+}
+Set-Content -LiteralPath $LockPath -Value $PID -Encoding ASCII
+
 # ---- Prechecks ----
+$code = 0
+try {
 if (-not (Test-Path -LiteralPath (Join-Path $Root 'CLAUDE.md'))) { Stop-Run 'cwd is not repo root (CLAUDE.md missing)' }
 if ((git rev-parse --abbrev-ref HEAD).Trim() -ne 'main') { Stop-Run 'git branch is not main' }
 if (@(Get-DirtyPaths).Count -gt 0) { Stop-Run 'working tree not clean (tracked changes present)' }
@@ -162,7 +177,7 @@ foreach ($phase in $plan) {
   while (-not $ok -and $attempt -le $MaxRetries) {
     $attempt++
     $startHead = (git rev-parse HEAD).Trim()
-    $logPath = Join-Path $LogDir ("phase-{0:D2}-a{1}.json" -f $n, $attempt)
+    $logPath = Join-Path $LogDir ("phase-{0:D2}-a{1}-{2}.json" -f $n, $attempt, (Get-Date -Format 'yyyyMMdd-HHmmss'))
     Write-Host "Phase $n ($($phase.Title)) attempt $attempt model=$model"
     $res = Invoke-Claude $attemptPrompt $model $logPath
     $parsed = $null
@@ -180,14 +195,14 @@ foreach ($phase in $plan) {
       $commit = (git rev-parse --short HEAD).Trim()
     } else {
       Write-Host "Phase $n attempt $attempt failed: $lastReason" -ForegroundColor Yellow
-      $attemptPrompt = "Phase $n ($($phase.Title)) did not finish: $lastReason. Read docs/STATUS.md and logs/phase-$('{0:D2}' -f $n)-a$attempt.json tail, fix, then complete the original phase goal and end per CLAUDE.md rule 13.`n`nORIGINAL PROMPT FOLLOWS:`n$($phase.Prompt)"
+      $attemptPrompt = "Phase $n ($($phase.Title)) did not finish: $lastReason. Read docs/STATUS.md and $logPath tail, fix, then complete the original phase goal and end per CLAUDE.md rule 13.`n`nORIGINAL PROMPT FOLLOWS:`n$($phase.Prompt)"
     }
   }
 
   $endedAt = (Get-Date).ToString('o')
   if (-not $ok) {
     $tailLines = @()
-    $lastLog = Join-Path $LogDir ("phase-{0:D2}-a{1}.json" -f $n, $attempt)
+    $lastLog = $logPath
     if (Test-Path -LiteralPath $lastLog) { $tailLines = @(Get-Content -LiteralPath $lastLog -Encoding UTF8 | Select-Object -Last 40) }
     $report = @(
       "",
@@ -240,3 +255,10 @@ git pull --rebase origin main | Out-Null
 git push origin main | Out-Null
 if ($LASTEXITCODE -ne 0) { Stop-Run 'push of runner state failed' }
 Write-Host 'Runner finished.'
+} catch {
+  if ($_.Exception.Message -ne 'runner-stop') { Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red }
+  $code = 1
+} finally {
+  if ((Test-Path -LiteralPath $LockPath) -and ((Get-Content -LiteralPath $LockPath -Raw).Trim() -eq "$PID")) { Remove-Item -LiteralPath $LockPath -Force }
+}
+exit $code

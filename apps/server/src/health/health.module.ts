@@ -1,7 +1,7 @@
 import { Controller, Get, Inject, Injectable, Module } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { statfs } from 'node:fs/promises';
-import { Public } from '../common/decorators';
+import { Public, SkipPairing } from '../common/decorators';
 import { CONFIG } from '../core/tokens';
 import type { ServerConfig } from '../config';
 import { PrismaService } from '../core/prisma.service';
@@ -39,6 +39,7 @@ class HealthController {
   constructor(@Inject(HealthService) private readonly health: HealthService) {}
 
   @Public()
+  @SkipPairing()
   @Get('health')
   get() {
     return this.health.status();

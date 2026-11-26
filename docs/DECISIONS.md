@@ -41,3 +41,13 @@
 2026-11-26 | Settlement = total less issued credit notes vs amountPaid; openBalance exposed on invoices | credit notes reduce open balance without a new table
 2026-11-26 | Outbox stub handlers (document.render, einvoice.submit) succeed; retries 10 attempts, backoff 10s doubling, cap 1h | render and e-invoice land in Prompts 6 and 11
 2026-11-26 | Server version 0.4.0 (desktop too) | minor bump per rule 15 for Prompt 3
+2026-11-26 | Postgres 16.9-1 EDB zip, WinSW 3.0.0-alpha.11, Node 22.23.4, all sha256-pinned in tools/scripts/fetch-*.ts | spec requires pinned vendored binaries
+2026-11-26 | Secrets via DPAPI ProtectedData LocalMachine scope (PowerShell), not ConvertFrom-SecureString | that cmdlet is CurrentUser scope and LocalSystem services could not decrypt
+2026-11-26 | server.json holds dbUrl without password; password + local token injected from secrets.bin at load | rule 9: no secrets in config files
+2026-11-26 | Postgres service runs as LocalService; Api/Worker as LocalSystem | Postgres refuses elevated accounts; Api/Worker must read the SYSTEM+Admins secrets.bin
+2026-11-26 | Pairing guard keys on X-Device-Id header = Device.fingerprint; config requirePairing defaults true, test helper sets false | unpaired rejection on all routes except /pairing/* and /health
+2026-11-26 | POST /pairing/local-code (loopback + X-Local-Token) bootstraps the first device; POST /pairing/code needs device.create | server screen/CLI need a code before any device is paired
+2026-11-26 | --no-service skips firewall and services; Postgres started via pg_ctl (restricted token) | process mode must run without elevation
+2026-11-26 | icacls (OI)(CI) only on directories | on files it silently leaves an empty ACL
+2026-11-26 | migrate deploy uses the repo prisma CLI (packages/db); packaged installer must ship it | installer packaging is a later prompt
+2026-11-26 | Server and desktop 0.5.0; MIN_CLIENT_VERSION 0.5.0 | minor bump per rule 15 for Prompt 4; clients must send X-Device-Id

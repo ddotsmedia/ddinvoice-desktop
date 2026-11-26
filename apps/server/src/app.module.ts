@@ -5,6 +5,8 @@ import type { ServerConfig } from './config';
 import { CoreModule } from './core/core.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtGuard, PermissionGuard } from './auth/auth.guards';
+import { PairingModule } from './pairing/pairing.module';
+import { PairingGuard } from './pairing/pairing.guard';
 import { HealthModule } from './health/health.module';
 import { SystemModule } from './system/system.module';
 import { CustomersModule } from './customers/customers.module';
@@ -30,6 +32,7 @@ export class AppModule {
         ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 600 }] }),
         AuthModule,
         HealthModule,
+        PairingModule,
         SystemModule,
         CustomersModule,
         PeriodsModule,
@@ -42,6 +45,7 @@ export class AppModule {
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: APP_GUARD, useClass: PairingGuard },
         { provide: APP_GUARD, useClass: JwtGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
         { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },

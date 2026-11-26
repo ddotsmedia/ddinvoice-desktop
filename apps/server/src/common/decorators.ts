@@ -6,6 +6,7 @@ import { z } from 'zod';
 export const IS_PUBLIC = 'isPublic';
 export const PERMS = 'perms';
 export const SKIP_IDEMPOTENCY = 'skipIdempotency';
+export const SKIP_PAIRING = 'skipPairing';
 
 /** Route needs no access token (login, refresh, health). */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
@@ -17,3 +18,6 @@ export const SkipIdempotency = () => SetMetadata(SKIP_IDEMPOTENCY, true);
 /** Documents the request body in OpenAPI from the same Zod schema used for validation. */
 export const ZodBody = (schema: z.ZodType) =>
   applyDecorators(ApiBody({ schema: z.toJSONSchema(schema, { io: 'input' }) as Record<string, unknown> }));
+
+/** Route is reachable by unpaired devices (/pairing, /health). */
+export const SkipPairing = () => SetMetadata(SKIP_PAIRING, true);

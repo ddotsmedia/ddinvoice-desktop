@@ -26,11 +26,11 @@ const COA: [string, string, string, AT, boolean?][] = [
 export async function seedDemo(
   prisma: PrismaClient,
   adminPassword = randomBytes(12).toString('base64url'),
-  opts: { trn?: string } = {},
+  opts: { trn?: string; legalNameEn?: string; adminEmail?: string } = {},
 ) {
   const company = await prisma.company.create({
     data: {
-      legalNameEn: 'Demo Trading LLC', legalNameAr: 'ديمو للتجارة ذ.م.م', trn: opts.trn ?? '100000000000003', tradeLicenseNo: 'DEMO-0001',
+      legalNameEn: opts.legalNameEn ?? 'Demo Trading LLC', legalNameAr: 'ديمو للتجارة ذ.م.م', trn: opts.trn ?? '100000000000003', tradeLicenseNo: 'DEMO-0001',
       emirate: 'DUBAI', addressEn: 'Demo Street, Dubai, UAE', addressAr: 'شارع ديمو، دبي، الإمارات',
     },
   });
@@ -66,7 +66,7 @@ export async function seedDemo(
     roles[name] = (await prisma.role.create({ data: { companyId, name, permissions } })).id;
   }
   const admin = await prisma.user.create({
-    data: { companyId, email: 'admin@demo.local', nameEn: 'Demo Admin', passwordHash: await hashPassword(adminPassword) },
+    data: { companyId, email: opts.adminEmail ?? 'admin@demo.local', nameEn: opts.adminEmail ? 'Administrator' : 'Demo Admin', passwordHash: await hashPassword(adminPassword) },
   });
   await prisma.userRole.create({ data: { companyId, userId: admin.id, roleId: roles.owner! } });
   return { companyId, adminEmail: admin.email, adminPassword };

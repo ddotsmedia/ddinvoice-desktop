@@ -12,14 +12,18 @@
     "build:libs": "pnpm -r --filter \"./packages/*\" build",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint .",
-    "typecheck": "pnpm build:libs && pnpm -r typecheck"
+    "typecheck": "pnpm build:libs && pnpm -r typecheck",
+    "vendor": "tsx tools/scripts/fetch-postgres.ts && tsx tools/scripts/fetch-node.ts && tsx tools/scripts/fetch-winsw.ts",
+    "bundle:server": "tsx tools/scripts/bundle-server.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.10",
+    "esbuild": "0.28.2",
     "eslint": "10.15.0",
     "openapi-typescript": "7.13.0",
     "prettier": "3.10.1",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.74.0",
     "vitest": "5.1.1"

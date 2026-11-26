@@ -49,7 +49,7 @@ export async function createTenant(opts: { openPeriod?: boolean } = {}): Promise
   }
 
   const dataDir = mkdtempSync(join(tmpdir(), 'ddinv-test-'));
-  const config = parseConfig({ port: 47820, dbUrl: url, dataDir, companyId }) // never listens in tests;
+  const config = parseConfig({ port: 47820, dbUrl: url, dataDir, companyId, requirePairing: false }) // never listens in tests;
   const app = await createApp(config, { logger: process.env.DD_TEST_LOG ? ['error'] : false });
   await app.init();
 

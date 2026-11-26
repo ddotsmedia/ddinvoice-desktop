@@ -9,7 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
-    "gen:client": "tsc -p tsconfig.json && node dist/tools/export-openapi.js && openapi-typescript openapi.json -o ../../packages/contracts/src/client/schema.ts"
+    "gen:client": "tsc -p tsconfig.json && node dist/tools/export-openapi.js && openapi-typescript openapi.json -o ../../packages/contracts/src/client/schema.ts",
+    "test": "pnpm -w exec vitest run apps/server"
   },
   "dependencies": {
     "@ddinvoice/contracts": "workspace:*",

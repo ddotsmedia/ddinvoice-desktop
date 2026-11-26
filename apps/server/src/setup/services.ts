@@ -100,8 +100,17 @@ export function installServices(ctx: Ctx, configPath: string): void {
     run(exe, ['install']);
   }
 }
+/** SCM can answer "access denied" or "busy" right after install/stop; retry a few times before failing. */
 export function startService(ctx: Ctx, id: string): void {
-  run(wrapper(ctx, id), ['start']);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      run(wrapper(ctx, id), ['start']);
+      return;
+    } catch (e) {
+      if (attempt >= 4) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3000);
+    }
+  }
 }
 export function stopService(ctx: Ctx, id: string): void {
   run(wrapper(ctx, id), ['stop']);

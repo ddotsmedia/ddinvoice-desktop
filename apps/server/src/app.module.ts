@@ -21,6 +21,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { ApiErrorFilter } from './common/error.filter';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { AuditInterceptor } from './common/audit.interceptor';
+import { EventsModule } from './events/events.controller';
 
 /** Global pipeline: throttle → JWT → permission; idempotency → audit; one error filter. */
 @Module({})
@@ -30,7 +31,7 @@ export class AppModule {
       module: AppModule,
       imports: [
         CoreModule.forRoot(config),
-        ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: 600 }] }),
+        ThrottlerModule.forRoot({ throttlers: [{ ttl: 60_000, limit: config.rateLimitPerMinute }] }),
         AuthModule,
         HealthModule,
         PairingModule,
@@ -44,6 +45,7 @@ export class AppModule {
         PaymentsModule,
         JournalsModule,
         DocumentsModule,
+        EventsModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },

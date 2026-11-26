@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from './lib/session';
 import { Login } from './screens/auth/Login';
 import { ComingSoon } from './screens/shared/ComingSoon';
 import { UpdateRequired } from './screens/system/UpdateRequired';
+import { ServerNeedsUpdate } from './screens/system/ServerNeedsUpdate';
 import { SetupWizard } from './screens/setup/SetupWizard';
 import { Overview } from './screens/overview/Overview';
 import { InvoiceRegister } from './screens/invoices/InvoiceRegister';
@@ -43,6 +44,7 @@ export function App() {
 function Gate() {
   const s = useSession();
   if (s.versionGate === 'updateRequired') return <UpdateRequired current={s.appVersion} required={s.serverVersion?.minClient ?? ''} />;
+  if (s.versionGate === 'serverNeedsUpdate') return <ServerNeedsUpdate current={s.appVersion} server={s.serverVersion?.version ?? ''} />;
   if (s.versionGate === null) return <Loading />;
   if (s.authState === 'loading') return <Loading />;
   if (s.authState === 'signedOut') return <Login />;

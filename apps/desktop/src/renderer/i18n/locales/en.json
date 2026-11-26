@@ -33,7 +33,8 @@
     "reconnecting": "Reconnecting"
   },
   "banner": {
-    "offline": "The server is unreachable. Changes are disabled until the connection returns."
+    "offline": "The server is unreachable. Changes are disabled until the connection returns.",
+    "clockSkew": "This computer's clock differs from the server by more than 5 minutes. Issue dates use server time; fix the clock to avoid confusing records."
   },
   "topbar": {
     "company": "Company",
@@ -207,7 +208,8 @@
       "confirmIssue": "Issue invoice",
       "issued": "Invoice {{number}} issued.",
       "readOnly": "Issued invoices are read-only. Use a credit note to correct them.",
-      "createFirst": "Create the invoice first by saving a draft."
+      "createFirst": "Create the invoice first by saving a draft.",
+      "queuedIssue": "Server unreachable. Issue is saved on this PC and will be sent when the server is back (no duplicate)."
     },
     "table": {
       "showColumns": "Columns",
@@ -242,5 +244,32 @@
   "languages": {
     "en": "English",
     "ar": "العربية"
+  },
+  "serverNeedsUpdate": {
+    "title": "Main PC needs update",
+    "body": "This app is newer than the server. Update the server PC first, then reopen this app."
+  },
+  "conflict": {
+    "title": "Changed by someone else",
+    "body": "This draft was saved by another user or workstation. Choose which values to keep.",
+    "field": "Field",
+    "mine": "Mine",
+    "theirs": "Theirs",
+    "keepMine": "Keep mine (overwrite)",
+    "useTheirs": "Use theirs (discard mine)",
+    "lines": "Lines",
+    "fields": {
+      "customer": "Customer",
+      "supplyDate": "Supply date",
+      "currency": "Currency",
+      "fxRate": "FX rate",
+      "terms": "Terms",
+      "notes": "Notes",
+      "lines": "Lines (count · total)"
+    },
+    "noDifferences": "Values match; keep mine to save over the new version."
+  },
+  "presence": {
+    "editing": "{{user}} is editing this draft"
   }
 }

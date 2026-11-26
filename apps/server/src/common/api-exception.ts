@@ -7,6 +7,7 @@ export class ApiException extends Error {
     public readonly code: string,
     message: string,
     public readonly fields?: Record<string, string>,
+    public readonly extra?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiException';
@@ -23,6 +24,10 @@ export class ApiException extends Error {
   }
   static conflict(code: string, message: string): ApiException {
     return new ApiException(409, code, message);
+  }
+  /** 409 VERSION_CONFLICT carrying the current server record so the client can show mine vs theirs. */
+  static versionConflict(message: string, current: unknown): ApiException {
+    return new ApiException(409, ErrorCode.VersionConflict, message, undefined, { current });
   }
   static validation(message: string, fields?: Record<string, string>): ApiException {
     return new ApiException(400, ErrorCode.ValidationFailed, message, fields);

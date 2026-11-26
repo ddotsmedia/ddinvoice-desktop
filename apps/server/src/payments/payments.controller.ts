@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Inject, Module, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Perm, ZodBody } from '../common/decorators';
+import { CurrentAuth, type AuthContext } from '../common/auth-context';
+import { EventBus } from '../events/event-bus';
 import { ZodPipe } from '../common/zod.pipe';
 import { PaymentsService } from './payments.service';
 import { AllocatePaymentSchema, CreatePaymentSchema, type AllocateInput, type CreatePaymentInput } from './payments.schemas';
@@ -8,13 +10,18 @@ import { AllocatePaymentSchema, CreatePaymentSchema, type AllocateInput, type Cr
 @ApiTags('payments')
 @Controller('payments')
 class PaymentsController {
-  constructor(@Inject(PaymentsService) private readonly payments: PaymentsService) {}
+  constructor(
+    @Inject(PaymentsService) private readonly payments: PaymentsService,
+    @Inject(EventBus) private readonly bus: EventBus,
+  ) {}
 
   @Perm('payment.create')
   @ZodBody(CreatePaymentSchema)
   @Post()
-  create(@Body(new ZodPipe(CreatePaymentSchema)) body: CreatePaymentInput) {
-    return this.payments.create(body);
+  async create(@CurrentAuth() auth: AuthContext, @Body(new ZodPipe(CreatePaymentSchema)) body: CreatePaymentInput) {
+    const payment = await this.payments.create(body);
+    this.bus.publish(auth.companyId, 'payment.created', { paymentId: payment.id });
+    return payment;
   }
 
   @Perm('payment.read')

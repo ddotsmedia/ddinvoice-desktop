@@ -147,7 +147,10 @@ export class InvoicesService {
         throw ApiException.unprocessable(ErrorCode.ImmutableRecord, 'Issued invoices cannot be edited; issue a credit note');
       }
       if (inv.version !== expectedVersion) {
-        throw new ApiException(412, ErrorCode.PreconditionFailed, `Version ${expectedVersion} is stale; current is ${inv.version}`);
+        throw ApiException.versionConflict(
+          `Version ${expectedVersion} is stale; current is ${inv.version}`,
+          await this.load(tx, id),
+        );
       }
       const customerId = body.customerId ?? inv.customerId;
       const customer = await tx.customer.findFirst({ where: { id: customerId } });
@@ -172,7 +175,9 @@ export class InvoicesService {
           version: { increment: 1 },
         },
       });
-      if (updated.count !== 1) throw new ApiException(412, ErrorCode.PreconditionFailed, 'Version is stale');
+      if (updated.count !== 1) {
+        throw ApiException.versionConflict('Version is stale', await this.load(tx, id));
+      }
       if (body.lines) {
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
         await tx.invoiceLine.createMany({ data: lines.map((l, i) => lineRow(this.config.companyId, id, i + 1, l, computed.lines[i]!)) });
@@ -276,6 +281,15 @@ export class InvoicesService {
         return this.load(tx, inv.id);
       }),
     );
+  }
+
+  /** Display name for presence; the draft must exist and be a draft (presence on issued records is meaningless). */
+  async presence(userId: string, id: string): Promise<string> {
+    const inv = await this.db.invoice.findFirst({ where: { id }, select: { status: true } });
+    if (!inv) throw ApiException.notFound('Invoice');
+    if (inv.status !== 'DRAFT') throw ApiException.unprocessable(ErrorCode.ImmutableRecord, 'Presence is for drafts only');
+    const user = await this.db.user.findFirst({ where: { id: userId }, select: { nameEn: true } });
+    return user?.nameEn ?? 'Unknown user';
   }
 
   async markSent(id: string) {

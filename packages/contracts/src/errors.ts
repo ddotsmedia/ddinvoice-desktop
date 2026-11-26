@@ -8,6 +8,7 @@ export enum ErrorCode {
   Conflict = 'CONFLICT',
   IdempotencyConflict = 'IDEMPOTENCY_CONFLICT',
   PreconditionFailed = 'PRECONDITION_FAILED',
+  VersionConflict = 'VERSION_CONFLICT',
   InvalidCredentials = 'INVALID_CREDENTIALS',
   MfaRequired = 'MFA_REQUIRED',
   AccountLocked = 'ACCOUNT_LOCKED',

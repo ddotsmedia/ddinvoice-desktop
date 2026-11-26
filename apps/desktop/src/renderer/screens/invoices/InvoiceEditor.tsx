@@ -8,6 +8,10 @@ import { ApiError } from '../../lib/api';
 import { useSession } from '../../lib/session';
 import { useApi, useCustomers, useInvoice, useTaxCodes } from '../../lib/queries';
 import { computeTotals, fmt, type EditableLine } from '../../lib/totals';
+import { ConflictDialog } from './ConflictDialog';
+import { usePresence } from '../../lib/live';
+import { OUTBOX_CHANGED, persistentOutbox } from '../../lib/outbox';
+import { conflictFields, type FieldConflict } from './conflict';
 import type { InvoiceDetail, TaxCodeRow } from '../../lib/types';
 import { buildInvoiceBody, EMPTY_LINE, splitFieldErrors, type HeaderValues } from './invoice-payload';
 import { LineGrid, type GridLine } from './LineGrid';
@@ -29,12 +33,14 @@ export function InvoiceEditor() {
   const navigate = useNavigate();
   const api = useApi();
   const qc = useQueryClient();
-  const { permissions } = useSession();
+  const { permissions, me } = useSession();
   const existing = useInvoice(id);
   const customers = useCustomers();
   const taxCodes = useTaxCodes();
 
   const [draftId, setDraftId] = useState<string | null>(id ?? null);
+  const presence = usePresence(draftId ?? undefined);
+  const otherEditor = presence && presence.userId !== me?.id ? presence : null;
   const [header, setHeader] = useState<HeaderValues>(EMPTY_HEADER);
   const [lines, setLines] = useState<GridLine[]>(() => [EMPTY_LINE()]);
   const [dirty, setDirty] = useState(false);
@@ -44,6 +50,9 @@ export function InvoiceEditor() {
   const [issueOpen, setIssueOpen] = useState(false);
   const [issuing, setIssuing] = useState(false);
   const revRef = useRef(0);
+  /** Version of the draft this client last saw or wrote; sent as If-Match on every PATCH. */
+  const versionRef = useRef<number | null>(null);
+  const [conflict, setConflict] = useState<{ theirs: InvoiceDetail; fields: FieldConflict[] } | null>(null);
   const createKeyRef = useRef<string>(crypto.randomUUID());
 
   const isIssued = existing.data?.status === 'ISSUED';
@@ -57,7 +66,19 @@ export function InvoiceEditor() {
     setHeader(headerFrom(existing.data));
     setLines(linesFrom(existing.data, codeById));
     setDraftId(existing.data.id);
+    versionRef.current = existing.data.version;
   }, [existing.data, codes.length]);
+
+  // Presence heartbeat every 10 s while this draft is open and editable; the server fans it out to other clients.
+  useEffect(() => {
+    if (!draftId || readOnly) return;
+    const beat = () => {
+      api.post(`/invoices/${draftId}/presence`).catch(() => undefined);
+    };
+    beat();
+    const timer = setInterval(beat, 10_000);
+    return () => clearInterval(timer);
+  }, [api, draftId, readOnly]);
 
   const edit = useCallback((fn: () => void) => {
     fn();
@@ -84,10 +105,15 @@ export function InvoiceEditor() {
       if (!draftId) {
         const created = await api.post<InvoiceDetail>('/invoices', { body, idempotencyKey: createKeyRef.current });
         setDraftId(created.id);
+        versionRef.current = created.version;
         await qc.invalidateQueries({ queryKey: ['invoices'] });
         navigate(`/sales/invoices/${created.id}`, { replace: true });
       } else {
-        await api.patch<InvoiceDetail>(`/invoices/${draftId}`, { body });
+        const saved = await api.patch<InvoiceDetail>(`/invoices/${draftId}`, {
+          body,
+          ifMatch: versionRef.current ?? existing.data?.version ?? 1,
+        });
+        versionRef.current = saved.version;
         await qc.invalidateQueries({ queryKey: ['invoices'] });
       }
       if (rev === revRef.current) setDirty(false);
@@ -95,13 +121,37 @@ export function InvoiceEditor() {
       setErrors({ header: {}, cells: {} });
       return true;
     } catch (e) {
+      if (e instanceof ApiError && e.code === 'VERSION_CONFLICT' && e.extra.current) {
+        // Someone else saved first: show mine vs theirs and let the user choose. Nothing is overwritten silently.
+        const theirs = e.extra.current as InvoiceDetail;
+        const customerName = (cid: string) => customers.data?.find((c) => c.id === cid)?.nameEn ?? cid;
+        setConflict({ theirs, fields: conflictFields({ header, lines }, theirs, customerName) });
+        return false;
+      }
       if (e instanceof ApiError && Object.keys(e.fields).length > 0) setErrors(splitFieldErrors(e.fields));
       toast.error(e instanceof ApiError ? t(e.messageKey) : t('errors.generic'));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [api, codes, draftId, header, lines, navigate, qc, readOnly, saving, t]);
+  }, [api, codes, customers.data, draftId, existing.data?.version, header, lines, navigate, qc, readOnly, saving, t]);
+
+  const keepMine = async () => {
+    if (!conflict) return;
+    versionRef.current = conflict.theirs.version;
+    setConflict(null);
+    await save();
+  };
+
+  const useTheirs = () => {
+    if (!conflict) return;
+    const theirs = conflict.theirs;
+    setHeader(headerFrom(theirs));
+    setLines(linesFrom(theirs, codeById));
+    versionRef.current = theirs.version;
+    setDirty(false);
+    setConflict(null);
+  };
 
   // Autosave every 5s while there are unsaved changes. The interval reads the latest save through a ref.
   const saveRef = useRef(save);
@@ -153,6 +203,14 @@ export function InvoiceEditor() {
       await qc.invalidateQueries({ queryKey: ['invoices'] });
       await qc.invalidateQueries({ queryKey: ['invoice', draftId] });
     } catch (e) {
+      if (e instanceof ApiError && e.status === 0) {
+        // Server unreachable: keep the command with the same Idempotency-Key and send it when the server is back.
+        persistentOutbox().enqueue({ method: 'POST', path: `/invoices/${draftId}/issue`, idempotencyKey: key });
+        window.dispatchEvent(new Event(OUTBOX_CHANGED));
+        setIssueOpen(false);
+        toast.message(t('invoices.editor.queuedIssue'));
+        return;
+      }
       toast.error(e instanceof ApiError ? t(e.messageKey) : t('errors.generic'));
     } finally {
       setIssuing(false);
@@ -170,6 +228,7 @@ export function InvoiceEditor() {
         </h1>
         {!draftId ? <Badge tone="warning">{t('invoices.editor.unsyncedDraft')}</Badge> : null}
         {isIssued ? <Badge tone="info">{t('invoices.status.ISSUED')}</Badge> : null}
+        {otherEditor ? <Badge tone="info">{t('presence.editing', { user: otherEditor.userName })}</Badge> : null}
         <span className="ms-auto text-navy-muted" aria-live="polite">
           {saving ? t('invoices.editor.autosaving') : savedAt ? t('invoices.editor.savedAt', { time: savedAt.toLocaleTimeString() }) : ''}
         </span>
@@ -238,6 +297,14 @@ export function InvoiceEditor() {
           <dd className="font-semibold"><bdi dir="ltr">{totals.total}</bdi></dd>
         </dl>
       </div>
+
+      <ConflictDialog
+        open={conflict !== null}
+        conflicts={conflict?.fields ?? []}
+        onKeepMine={() => void keepMine()}
+        onUseTheirs={useTheirs}
+        onClose={() => setConflict(null)}
+      />
 
       <Dialog
         open={issueOpen}

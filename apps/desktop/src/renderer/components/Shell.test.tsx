@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initI18n } from '../i18n';
 
 const session = {
@@ -10,6 +11,7 @@ const session = {
   me: { id: 'u1', companyId: 'c1', email: 'a@example.com', nameEn: 'A', nameAr: 'A', locale: 'en' as const, permissions: [] as string[] },
   signOut: vi.fn(),
   updateConfig: vi.fn(),
+  clockSkew: null,
 };
 
 vi.mock('../lib/session', () => ({ useSession: () => session }));
@@ -17,12 +19,15 @@ vi.mock('../lib/session', () => ({ useSession: () => session }));
 const { Shell } = await import('./Shell');
 
 function renderShell() {
+  const qc = new QueryClient();
   return render(
-    <MemoryRouter>
-      <Shell>
-        <div />
-      </Shell>
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <Shell>
+          <div />
+        </Shell>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

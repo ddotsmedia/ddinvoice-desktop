@@ -6,6 +6,8 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly fields: Record<string, string> = {},
+    /** Extra error body fields, e.g. `current` on 409 VERSION_CONFLICT. */
+    readonly extra: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = 'ApiError';
@@ -27,6 +29,8 @@ export interface RequestOptions {
   body?: unknown;
   /** Required for commands (POST/PATCH/DELETE on business endpoints). Generated when omitted. */
   idempotencyKey?: string;
+  /** Expected record version for optimistic locking (sent as If-Match). */
+  ifMatch?: number;
   signal?: AbortSignal;
 }
 
@@ -53,6 +57,19 @@ export class Api {
     return this.send<T>('PATCH', path, { ...opts, idempotencyKey: opts.idempotencyKey ?? crypto.randomUUID() });
   }
 
+  /**
+   * Opens a streaming GET (SSE). Same auth and one refresh retry as `send`. Caller owns the body reader and abort signal.
+   */
+  async openStream(path: string, signal: AbortSignal, retried = false): Promise<Response> {
+    const headers: Record<string, string> = { Accept: 'text/event-stream', 'X-Device-Id': this.cfg.deviceId };
+    const token = this.cfg.getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(this.url(path), { headers, signal });
+    if (res.status === 401 && !retried && (await this.cfg.refresh())) return this.openStream(path, signal, true);
+    if (!res.ok || !res.body) throw new ApiError(res.status, 'STREAM_FAILED', res.statusText || 'Stream unavailable');
+    return res;
+  }
+
   private url(path: string, query?: RequestOptions['query']): string {
     const u = new URL(path, this.cfg.origin);
     for (const [k, v] of Object.entries(query ?? {})) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));
@@ -64,6 +81,7 @@ export class Api {
     const token = this.cfg.getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
+    if (opts.ifMatch !== undefined) headers['If-Match'] = String(opts.ifMatch);
     if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
 
     let res: Response;
@@ -86,8 +104,9 @@ export class Api {
     const text = await res.text();
     const json = text ? safeJson(text) : null;
     if (!res.ok) {
-      const body = (json ?? {}) as { code?: string; message?: string; fields?: Record<string, string> };
-      throw new ApiError(res.status, body.code ?? 'HTTP_ERROR', body.message ?? res.statusText, body.fields ?? {});
+      const body = (json ?? {}) as { code?: string; message?: string; fields?: Record<string, string>; [k: string]: unknown };
+      const { code, message, fields, ...extra } = body;
+      throw new ApiError(res.status, code ?? 'HTTP_ERROR', message ?? res.statusText, fields ?? {}, extra);
     }
     return json as T;
   }
@@ -110,4 +129,22 @@ export function versionAtLeast(current: string, minimum: string): boolean {
     if (d !== 0) return d > 0;
   }
   return true;
+}
+
+export type VersionGate = 'ok' | 'updateRequired' | 'serverNeedsUpdate';
+
+/** Client below server minClient -> updateRequired; client newer than the server -> serverNeedsUpdate (main PC first). */
+export function versionGateFor(appVersion: string, server: { version: string; minClient: string }): VersionGate {
+  if (!versionAtLeast(appVersion, server.minClient)) return 'updateRequired';
+  if (!versionAtLeast(server.version, appVersion)) return 'serverNeedsUpdate';
+  return 'ok';
+}
+
+/** Local clock may be off by at most this much before the desktop warns (server time is authoritative for dates). */
+export const CLOCK_SKEW_LIMIT_MS = 5 * 60_000;
+
+/** Skew of the local clock against the server, measured at the request midpoint to cancel network latency. */
+export function clockSkewMs(serverTimeIso: string, requestStartMs: number, requestEndMs: number): number {
+  const midpoint = (requestStartMs + requestEndMs) / 2;
+  return midpoint - Date.parse(serverTimeIso);
 }

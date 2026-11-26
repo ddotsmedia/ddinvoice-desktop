@@ -9,7 +9,8 @@ class SystemController {
   @Public()
   @Get('version')
   version() {
-    return { api: API_VERSION, version: SERVER_VERSION, minClient: MIN_CLIENT_VERSION };
+    // serverTime is authoritative: the desktop compares its clock against it and warns above 5 min skew.
+    return { api: API_VERSION, version: SERVER_VERSION, minClient: MIN_CLIENT_VERSION, serverTime: new Date().toISOString() };
   }
 }
 

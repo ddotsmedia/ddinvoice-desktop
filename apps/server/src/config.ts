@@ -20,6 +20,8 @@ const ConfigSchema = z.object({
   companyName: z.string().min(1).optional(),
   /** Devices must be paired (X-Device-Id header). Only tests/dev may disable. */
   requirePairing: z.boolean().default(true),
+  /** Per-IP request budget per minute (ThrottlerGuard). Raised only by the load test. */
+  rateLimitPerMinute: z.number().int().min(1).default(600),
 });
 export type ServerConfig = z.infer<typeof ConfigSchema>;
 

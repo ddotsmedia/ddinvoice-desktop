@@ -24,7 +24,7 @@ export interface Tenant {
 }
 
 /** Each tenant is its own company on the shared test database, with its own app instance. */
-export async function createTenant(opts: { openPeriod?: boolean } = {}): Promise<Tenant> {
+export async function createTenant(opts: { openPeriod?: boolean; rateLimitPerMinute?: number } = {}): Promise<Tenant> {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set (root vitest globalSetup)');
   const prisma = new PrismaClient({ datasources: { db: { url } } });
@@ -51,7 +51,15 @@ export async function createTenant(opts: { openPeriod?: boolean } = {}): Promise
   const dataDir = mkdtempSync(join(tmpdir(), 'ddinv-test-'));
   // chromePath is only used by preview/archive renders; Chrome launches lazily.
   const chromePath = process.env.DD_CHROME_PATH ?? resolve(__dirname, '../../../vendor/chrome/chrome-headless-shell-win64/chrome-headless-shell.exe');
-  const config = parseConfig({ port: 47820, dbUrl: url, dataDir, companyId, requirePairing: false, chromePath }); // never listens in tests
+  const config = parseConfig({
+    port: 47820,
+    dbUrl: url,
+    dataDir,
+    companyId,
+    requirePairing: false,
+    chromePath,
+    ...(opts.rateLimitPerMinute ? { rateLimitPerMinute: opts.rateLimitPerMinute } : {}),
+  }); // never listens in tests
   const app = await createApp(config, { logger: process.env.DD_TEST_LOG ? ['error'] : false });
   await app.init();
 

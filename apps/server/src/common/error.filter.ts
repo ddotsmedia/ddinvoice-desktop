@@ -9,6 +9,7 @@ interface ApiBody {
   code: string;
   message: string;
   fields?: Record<string, string>;
+  [extra: string]: unknown;
 }
 
 /** Every error leaves as ApiError {code, message, fields?}. Internal details are logged, never returned. */
@@ -25,7 +26,10 @@ export class ApiErrorFilter implements ExceptionFilter {
 
   private map(e: unknown): [number, ApiBody] {
     if (e instanceof ApiException) {
-      return [e.status, { code: e.code, message: e.message, ...(e.fields && { fields: e.fields }) }];
+      return [
+        e.status,
+        { code: e.code, message: e.message, ...(e.fields && { fields: e.fields }), ...(e.extra ?? {}) },
+      ];
     }
     if (e instanceof DomainError) {
       const code = e.code === 'UNBALANCED_JOURNAL' ? ErrorCode.JournalUnbalanced : e.code;

@@ -127,6 +127,43 @@ export class AuthService {
     await this.db.session.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 
+  /** Live sessions (not revoked, not expired) with user and device. Read by admins; `activeCount` is the seat counter for Prompt 8. */
+  async listSessions(currentSessionId: string) {
+    const now = new Date();
+    const rows = await this.db.session.findMany({
+      where: { revokedAt: null, expiresAt: { gt: now } },
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { email: true, nameEn: true } }, device: { select: { name: true, kind: true, lastSeenAt: true } } },
+    });
+    return {
+      activeCount: rows.length,
+      sessions: rows.map((s) => ({
+        id: s.id,
+        current: s.id === currentSessionId,
+        userEmail: s.user.email,
+        userName: s.user.nameEn,
+        deviceName: s.device.name,
+        deviceKind: s.device.kind,
+        ip: s.ip,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt.toISOString(),
+        lastSeenAt: s.device.lastSeenAt?.toISOString() ?? null,
+        expiresAt: s.expiresAt.toISOString(),
+      })),
+    };
+  }
+
+  /** Number of live sessions in this company (license seat counter; enforced in Prompt 8). */
+  async countActiveSessions(): Promise<number> {
+    return this.db.session.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } });
+  }
+
+  async revokeSession(sessionId: string): Promise<number> {
+    const res = await this.db.session.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date() } });
+    if (res.count === 0) throw ApiException.notFound('Session');
+    return res.count;
+  }
+
   async me(userId: string, permissions: ReadonlySet<string>) {
     const user = await this.db.user.findFirst({ where: { id: userId } });
     if (!user) throw ApiException.notFound('User');

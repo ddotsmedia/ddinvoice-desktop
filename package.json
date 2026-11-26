@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "typecheck": "pnpm build:libs && pnpm -r typecheck",
     "vendor": "tsx tools/scripts/fetch-postgres.ts && tsx tools/scripts/fetch-node.ts && tsx tools/scripts/fetch-winsw.ts && tsx tools/scripts/fetch-chrome.ts",
-    "bundle:server": "tsx tools/scripts/bundle-server.ts"
+    "bundle:server": "tsx tools/scripts/bundle-server.ts",
+    "load": "tsx --tsconfig apps/server/tsconfig.json tools/scripts/load.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

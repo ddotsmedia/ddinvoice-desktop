@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 import { Button } from '@ddinvoice/ui';
 import { useSession } from '../lib/session';
+import { LiveProvider } from '../lib/live';
 import { visibleNav } from '../lib/nav';
 import { ConnectionBadge } from './ConnectionBadge';
 import { LanguageToggle } from './LanguageToggle';
@@ -10,7 +11,7 @@ import { LanguageToggle } from './LanguageToggle';
 /** Left navigation (filtered by permission), top bar, and the offline banner. */
 export function Shell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
-  const { connection, permissions, me, signOut } = useSession();
+  const { connection, permissions, me, signOut, clockSkew } = useSession();
   const sections = useMemo(() => visibleNav(permissions), [permissions]);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -69,7 +70,15 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         ) : null}
 
-        <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+        {clockSkew !== null ? (
+          <div role="alert" className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">
+            {t('banner.clockSkew')}
+          </div>
+        ) : null}
+
+        <main className="min-h-0 flex-1 overflow-auto">
+          <LiveProvider>{children}</LiveProvider>
+        </main>
       </div>
     </div>
   );

@@ -79,3 +79,15 @@
 2026-11-26 | PDF test suites skip when the vendored Chrome is absent (Linux db job); Windows ci job runs fetch-chrome before tests | Chrome is Windows-only; the db job covers DB paths
 2026-11-26 | Outbox test drains einvoice.submit (still stubbed) instead of document.render | document.render is now a real handler
 2026-11-26 | minimumReleaseAgeExclude: puppeteer-core@25.19.0 and @puppeteer/browsers@3.3.0 | pnpm release-age gate blocked the pinned renderer; pinned exact, review before next bump
+2026-11-26 | Draft PATCH conflict returns 409 VERSION_CONFLICT with the current record in `current`; 412 PRECONDITION_FAILED no longer used | the client needs the server copy to show mine vs theirs; 412 had no body
+2026-11-26 | Live updates: SSE GET /events on an in-process EventBus; presence is ephemeral (not stored, client expires after 30 s, heartbeat every 10 s) | single server process; late joiners do not see presence until the next heartbeat
+2026-11-26 | Session admin: GET /auth/sessions needs user.read, POST /auth/sessions/:id/revoke needs user.update; logout and revoke close the SSE stream | reuses the existing permission catalog; access tokens die at the next JwtGuard check
+2026-11-26 | Concurrent session counter (activeCount) exposed in GET /auth/sessions; not enforced | seat enforcement belongs to Prompt 8 (license)
+2026-11-26 | GET /system/version adds serverTime; desktop warns when |local - server| > 5 min; issue dates already use the server clock (businessDate) | server time is authoritative; the desktop warning is advisory only
+2026-11-26 | Desktop gate: client newer than server shows 'Main PC needs update' (serverNeedsUpdate) | Prompt 7 item 5; versionGateFor is unit tested
+2026-11-26 | Server and desktop 0.8.0; MIN_CLIENT_VERSION 0.8.0 | rule 15; 0.7.x clients send no If-Match and would get 400 on draft PATCH
+2026-11-26 | Offline outbox (localStorage) keeps the Idempotency-Key of a queued Issue and resends it with the same key; only Issue is queued | drafts still use autosave; not encrypted yet (invoice data is not a secret, but the phase spec asks for an encrypted store)
+2026-11-26 | Rate limit budget is config (rateLimitPerMinute, default 600); the load run alone raises it | 10 virtual users at full speed exceed 600 requests/minute from one IP
+2026-11-26 | Load fixture: seed-volume writes 100k issued invoices and 50k payments (every even invoice paid in full) with raw SQL under session_replication_role=replica | 'payments' read as one per paid invoice; triggers block line inserts into issued invoices; SQL checks run afterwards on the result
+2026-11-26 | load.ts runs under tsx with apps/server/tsconfig (not bare node) | bare node cannot import extensionless TS and the server needs experimentalDecorators
+2026-11-26 | Two-Electron Playwright e2e (Prompt 7 item 8) not written this session | Electron harness and a pinned Playwright need their own change; see STATUS

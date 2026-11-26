@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentAuth, type AuthContext } from '../common/auth-context';
-import { Perm, ZodBody } from '../common/decorators';
+import { Perm, SkipIdempotency, ZodBody } from '../common/decorators';
+import { EventBus } from '../events/event-bus';
 import { ApiException } from '../common/api-exception';
 import { ZodPipe } from '../common/zod.pipe';
 import {
@@ -38,7 +39,10 @@ export function parseIfMatch(header: string | undefined): number {
 @ApiTags('invoices')
 @Controller('invoices')
 export class InvoicesController {
-  constructor(@Inject(InvoicesService) private readonly invoices: InvoicesService) {}
+  constructor(
+    @Inject(InvoicesService) private readonly invoices: InvoicesService,
+    @Inject(EventBus) private readonly bus: EventBus,
+  ) {}
 
   @Perm('invoice.create')
   @ZodBody(CreateInvoiceSchema)
@@ -62,12 +66,25 @@ export class InvoicesController {
   @Perm('invoice.update')
   @ZodBody(UpdateInvoiceSchema)
   @Patch(':id')
-  update(
+  async update(
+    @CurrentAuth() auth: AuthContext,
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('if-match') ifMatch: string | undefined,
     @Body(new ZodPipe(UpdateInvoiceSchema)) body: UpdateInvoiceInput,
   ) {
-    return this.invoices.update(id, body, parseIfMatch(ifMatch));
+    const draft = await this.invoices.update(id, body, parseIfMatch(ifMatch));
+    this.bus.publish(auth.companyId, 'draft.updated', { invoiceId: id, version: draft.version, actorId: auth.userId });
+    return draft;
+  }
+
+  /** Editing heartbeat: the server tells every other open client who is editing this draft. Not stored; clients expire it. */
+  @Perm('invoice.update')
+  @SkipIdempotency()
+  @Post(':id/presence')
+  async presence(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    const userName = await this.invoices.presence(auth.userId, id);
+    this.bus.publish(auth.companyId, 'presence', { invoiceId: id, userId: auth.userId, userName, editing: true });
+    return { ok: true };
   }
 
   @Perm('invoice.delete')
@@ -78,8 +95,10 @@ export class InvoicesController {
 
   @Perm('invoice.issue')
   @Post(':id/issue')
-  issue(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
-    return this.invoices.issue(auth, id);
+  async issue(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    const issued = await this.invoices.issue(auth, id);
+    this.bus.publish(auth.companyId, 'invoice.issued', { invoiceId: id, number: issued.number, version: issued.version });
+    return issued;
   }
 
   @Perm('invoice.update')

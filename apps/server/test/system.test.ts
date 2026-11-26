@@ -43,7 +43,7 @@ d('health, system and outbox worker', () => {
   it('GET /system/version reports api and minimum client', async () => {
     const res = await request(t.app.getHttpServer()).get('/system/version');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ api: 'v1', version: pkg.version, minClient: pkg.version });
+    expect(res.body).toEqual({ api: 'v1', version: pkg.version, minClient: pkg.version, serverTime: expect.any(String) });
   });
 
   it('worker drains a handled topic to DONE', async () => {

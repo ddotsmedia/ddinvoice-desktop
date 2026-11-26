@@ -67,7 +67,10 @@ d('invoices', () => {
   it('PATCH on a draft honours If-Match and rejects a stale version', async () => {
     const { id, version } = await createDraftInvoice(t, customerId);
     const stale = await http(t).patch(`/invoices/${id}`, { notes: 'x' }, version + 5);
-    expect(stale.status).toBe(412);
+    expect(stale.status).toBe(409);
+    expect(stale.body.code).toBe("VERSION_CONFLICT");
+    expect(stale.body.current.version).toBe(version);
+    expect(stale.body.current.notes).toBe("");
     const ok = await http(t).patch(`/invoices/${id}`, { notes: 'updated', lines: [invoiceLine(t, '1', '50')] }, version);
     expect(ok.status).toBe(200);
     expect(ok.body.version).toBe(version + 1);

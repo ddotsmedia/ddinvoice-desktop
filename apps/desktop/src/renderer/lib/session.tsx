@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppConfig, Tokens } from '../../shared/ipc';
-import { Api, ApiError, versionAtLeast } from './api';
+import { Api, ApiError, CLOCK_SKEW_LIMIT_MS, clockSkewMs, versionGateFor, type VersionGate } from './api';
 
 export type Connection = 'connected' | 'reconnecting' | 'offline';
 
@@ -25,9 +25,11 @@ export interface SessionValue {
   api: Api | null;
   connection: Connection;
   /** null until /system/version has been read for the paired server. */
-  versionGate: 'ok' | 'updateRequired' | null;
+  versionGate: VersionGate | null;
   appVersion: string;
   serverVersion: { version: string; minClient: string } | null;
+  /** Local clock minus server clock in ms, when it exceeds 5 min; null otherwise. */
+  clockSkew: number | null;
   me: Me | null;
   permissions: ReadonlySet<string>;
   authState: 'loading' | 'signedOut' | 'signedIn';
@@ -55,6 +57,7 @@ export function SessionProvider({ initialConfig, appVersion, children }: { initi
   const [connection, setConnection] = useState<Connection>('reconnecting');
   const [serverVersion, setServerVersion] = useState<SessionValue['serverVersion']>(null);
   const [versionFailed, setVersionFailed] = useState(false);
+  const [clockSkew, setClockSkew] = useState<number | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const tokenRef = useRef<Tokens | null>(null);
 
@@ -120,12 +123,15 @@ export function SessionProvider({ initialConfig, appVersion, children }: { initi
   useEffect(() => {
     if (!api || serverVersion) return;
     let cancelled = false;
+    const started = Date.now();
     api
-      .get<{ version: string; minClient: string }>('/system/version')
+      .get<{ version: string; minClient: string; serverTime: string }>('/system/version')
       .then((v) => {
         if (cancelled) return;
         setServerVersion(v);
         setVersionFailed(false);
+        const skew = clockSkewMs(v.serverTime, started, Date.now());
+        setClockSkew(Math.abs(skew) > CLOCK_SKEW_LIMIT_MS ? skew : null);
       })
       .catch(() => {
         if (!cancelled) setVersionFailed(true);
@@ -186,9 +192,7 @@ export function SessionProvider({ initialConfig, appVersion, children }: { initi
   }, []);
 
   const versionGate: SessionValue['versionGate'] = serverVersion
-    ? versionAtLeast(appVersion, serverVersion.minClient)
-      ? 'ok'
-      : 'updateRequired'
+    ? versionGateFor(appVersion, serverVersion)
     : versionFailed
       ? 'ok'
       : null;
@@ -198,6 +202,7 @@ export function SessionProvider({ initialConfig, appVersion, children }: { initi
     api,
     connection,
     versionGate,
+    clockSkew,
     appVersion,
     serverVersion,
     me,

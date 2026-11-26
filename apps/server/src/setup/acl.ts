@@ -13,3 +13,9 @@ export function restrictAcl(path: string, extraSids: string[] = []): void {
   for (const sid of ['S-1-5-18', 'S-1-5-32-544', ...extraSids]) args.push('/grant:r', `*${sid}:${flags}`);
   execFileSync(sys32('icacls.exe'), args, { stdio: 'ignore' });
 }
+
+/** Removes the explicit grants for one SID, recursively (used to drop the installing user after PostgreSQL's restricted-token children finish). */
+export function removeSid(path: string, sid: string): void {
+  if (process.platform !== 'win32') return;
+  execFileSync(sys32('icacls.exe'), [path, '/remove:g', `*${sid}`, '/T', '/C', '/Q'], { stdio: 'ignore' });
+}

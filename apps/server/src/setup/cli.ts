@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { PrismaClient, hashPassword, seedDemo } from '@ddinvoice/db';
 import { dpapiProtect, readSecrets, type Secrets } from '../secrets';
 import { SERVER_VERSION } from '../version';
-import { restrictAcl } from './acl';
+import { removeSid, restrictAcl } from './acl';
 import { log, run, spawnDetached, sys32, type Ctx } from './exec';
 import { migrateWithBackup } from './migrate';
 import { ensurePki, fingerprint256, pkiPaths } from './pki';
@@ -231,10 +231,14 @@ async function installServer(opts: Opts): Promise<void> {
   mkdirSync(ctx.dataDir, { recursive: true });
   for (const d of [p.logs, p.backups, p.run]) mkdirSync(d, { recursive: true });
   // Service mode: SYSTEM + Administrators only (Postgres data additionally LocalService). Process mode: plus the installing user.
-  const user = ctx.service ? [] : [currentSid()];
+  // initdb and pg_ctl run with a restricted token (Administrators is deny-only), so the installing user needs access to run/, logs/ and pgdata during setup.
+  // Service mode drops that grant again once the services are registered.
+  const installer = currentSid();
+  const user = ctx.service ? [] : [installer];
+  const during = [installer];
   restrictAcl(p.backups, user);
-  restrictAcl(p.run, user);
-  restrictAcl(p.logs, user);
+  restrictAcl(p.run, during);
+  restrictAcl(p.logs, during);
 
   log(ctx, '1/8 secrets');
   const secrets = newSecrets();
@@ -244,7 +248,7 @@ async function installServer(opts: Opts): Promise<void> {
   restrictAcl(p.secrets, user);
 
   log(ctx, '2/8 postgres init');
-  initCluster(ctx, secrets, ctx.service ? ['S-1-5-19'] : user);
+  initCluster(ctx, secrets, ctx.service ? ['S-1-5-19', installer] : user);
   startPgProcess(ctx);
   createRolesAndDb(ctx, secrets);
 
@@ -314,6 +318,7 @@ async function installServer(opts: Opts): Promise<void> {
     stopPgProcess(ctx);
     installServices(ctx, p.config);
     for (const id of [SVC_PG, SVC_API, SVC_WORKER]) startService(ctx, id);
+    for (const d of [p.run, p.logs, pgData(ctx)]) removeSid(d, installer);
   } else {
     log(ctx, '7/8 process mode (no services, no firewall)');
     startApp(ctx);

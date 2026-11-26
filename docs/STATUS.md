@@ -20,14 +20,19 @@ Prompt 8 Backup, restore, health, licensing, support bundle, data export: server
 - `pnpm test`: server suite 103 tests pass, including new `ops-units`, `ops-backup` (round trip with the vendored pg_dump / pg_restore on the embedded test cluster), and `ops-api` (seat limit, module gate, expired read-only, tampered license, health, support bundle redaction, export, recovery release, outbox retry/dismiss).
 - Round-trip test is skipped where `vendor/pgsql/bin` has no pg_dump (set `DD_PG_BIN_DIR` to override).
 
+## Prompt 8 desktop (0.9.1)
+- Settings: Server health (services, DB size, disk warn < 10 GB, last backup, queue, failed jobs retry/dismiss, certificate, versions, devices), Backup (list, Back up now, recovery list with Release after review), Data export, License (status, install), Help (support bundle zip).
+- Shell banners: recovery mode, backup older than 26 h, read-only license. Nav items gated by permission.
+- i18n en and ar keys (ops.*, banner.*, nav.health/help/export); parity test passes; Arabic not natively reviewed.
+- Tests: desktop ops.test.ts (staleness, disk warn, size format, nav gating); pnpm test 209 server+desktop passing; lint and typecheck pass.
+
 ## Not done in Prompt 8 (open)
-- Desktop: Settings > Server health, Settings > Backup (targets, Back up now, restore wizard), Settings > Help (support bundle), Settings > Export, Settings > License, recovery banner, workstation backup-stale banner, nav gating by module. i18n keys (en, ar) and RTL not written. Desktop version bumped only.
-- Restore is not reachable from the API or UI; it runs from the CLI on the server PC.
-- Backups read the whole archive in memory (fine for pilot sizes; streaming is a follow-up).
-- App-role `pg_dump` (the worker dumps with ddinvoice_app) is only exercised by the superuser test cluster; verify on a real install.
-- Offline grace is not active until the online check exists (Prompt 10). Cloud backup target is Prompt 10.
-- No node-cron: scheduler is an interval in the worker (see DECISIONS).
-- Existing server 0.8.x installs: run `ddinvoice-setup backup-key` once to get a backup key and a recovery key; the migration adds `recoveryMode` on the next `migrate`.
+- Restore has no UI trigger (CLI only, by decision). Settings target (backupCopyDir) and cloud target not in UI.
+- Desktop screens are not exercised in a running Electron app here (no e2e); Playwright e2e still open.
+- node-cron replaced by an interval (see DECISIONS). Backups read the whole archive in memory.
+- App-role pg_dump only verified on the superuser test cluster; verify on a real install.
+- Offline grace not active until the online check exists (Prompt 10). Cloud backup target is Prompt 10.
+- Existing server 0.8.x installs: run ddinvoice-setup backup-key once.
 
 ## Carried over from Prompt 7 (still open)
 - Two-Electron Playwright e2e not written; no cross-instance SSE timing check.

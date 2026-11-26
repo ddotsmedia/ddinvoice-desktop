@@ -34,7 +34,10 @@
   },
   "banner": {
     "offline": "The server is unreachable. Changes are disabled until the connection returns.",
-    "clockSkew": "This computer's clock differs from the server by more than 5 minutes. Issue dates use server time; fix the clock to avoid confusing records."
+    "clockSkew": "This computer's clock differs from the server by more than 5 minutes. Issue dates use server time; fix the clock to avoid confusing records.",
+    "recovery": "Recovery mode: external sends (e-invoice, sync, e-mail) are paused. Review them under Settings > Backup.",
+    "backupStale": "No good backup in the last 26 hours. Ask the owner to check Settings > Server health.",
+    "readOnly": "License expired or invalid: read-only mode. You can view, print and export."
   },
   "topbar": {
     "company": "Company",
@@ -66,7 +69,10 @@
     "numbering": "Numbering",
     "devices": "Devices",
     "backup": "Backup",
-    "license": "License"
+    "license": "License",
+    "health": "Server health",
+    "help": "Help",
+    "export": "Data export"
   },
   "setup": {
     "title": "Set up DDInvoice",
@@ -271,5 +277,103 @@
   },
   "presence": {
     "editing": "{{user}} is editing this draft"
+  },
+  "ops": {
+    "never": "Never",
+    "state": {
+      "UP": "Running",
+      "DOWN": "Down",
+      "degraded": "Degraded"
+    },
+    "queue": {
+      "PENDING": "Pending",
+      "PROCESSING": "Processing",
+      "DONE": "Done",
+      "FAILED": "Failed"
+    },
+    "health": {
+      "title": "Server health",
+      "diskWarn": "Less than {{gb}} GB of disk space is free on the server.",
+      "services": "Services",
+      "api": "API",
+      "postgres": "Database",
+      "worker": "Worker",
+      "dbSize": "Database size",
+      "disk": "Disk free",
+      "backup": "Backup",
+      "lastBackup": "Last good backup",
+      "kind": "Kind",
+      "stale": "Older than 26 hours",
+      "queue": "Job queue",
+      "certificate": "Certificate",
+      "expires": "Expires",
+      "daysLeft": "{{days}} days left",
+      "noCertificate": "No certificate configured.",
+      "versions": "Versions",
+      "server": "Server",
+      "migrations": "Migrations applied",
+      "devices": "Connected devices",
+      "noDevices": "No connected devices.",
+      "failedJobs": "Failed jobs",
+      "noFailedJobs": "No failed jobs.",
+      "attempts": "attempts",
+      "external": "External",
+      "retry": "Retry",
+      "dismiss": "Dismiss"
+    },
+    "backup": {
+      "title": "Backup and restore",
+      "recoveryTitle": "Recovery mode",
+      "recoveryText": "This company was restored from a backup. External sends stay paused until you review this list and release them.",
+      "recoveryNone": "Nothing is waiting.",
+      "reviewed": "I have reviewed the pending list",
+      "release": "Release external sends",
+      "actions": "Actions",
+      "runNow": "Back up now",
+      "running": "Backing up...",
+      "restoreHint": "Restore runs on the server PC only, from the command line:",
+      "list": "Backups",
+      "kind": "Kind",
+      "target": "Target",
+      "status": "Status",
+      "at": "Time",
+      "none": "No backups yet.",
+      "restoreCommand": "ddinvoice-setup restore --file FILE --recovery-key KEY"
+    },
+    "help": {
+      "title": "Help",
+      "supportBundle": "Support bundle",
+      "description": "A zip with versions, health, migration status and redacted logs. It never contains the database.",
+      "download": "Save support bundle",
+      "preparing": "Preparing...",
+      "saved": "Saved."
+    },
+    "export": {
+      "title": "Data export",
+      "company": "Full company export",
+      "description": "Writes CSV files per table, the documents folder and a manifest with sha256 hashes on the server PC.",
+      "run": "Export company",
+      "running": "Exporting...",
+      "folder": "Folder",
+      "documents": "Documents"
+    },
+    "license": {
+      "title": "License",
+      "state": "Status",
+      "mode": "Mode",
+      "full": "Full access",
+      "readOnly": "Read-only",
+      "reason": "Reason",
+      "seats": "Seats",
+      "modules": "Modules",
+      "expires": "Expires",
+      "noExpiry": "No expiry",
+      "trial": "Trial",
+      "install": "Install license",
+      "placeholder": "Paste the license text (DDL1.…)",
+      "installButton": "Install",
+      "installed": "License installed.",
+      "invalid": "This license is not valid for this company."
+    }
   }
 }

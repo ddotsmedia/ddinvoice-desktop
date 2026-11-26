@@ -110,3 +110,10 @@
 2026-11-26 | Worker writes run/worker.heartbeat every pass (2 s); health reports the worker DOWN when the file is older than 30 s | the API cannot see worker threads; a file in the data directory is the simplest shared signal
 2026-11-26 | Server and desktop 0.9.0; MIN_CLIENT_VERSION 0.9.0 | rule 15; 0.8.x clients are blocked by the version gate
 2026-11-26 | Desktop Settings screens (server health, backup, recovery banner, support bundle, export, license), i18n keys and RTL checks are not built in this change | scope split: server, CLI, tests first; the UI consumes the endpoints listed in STATUS
+2026-11-26 | Desktop Settings > Server health, Backup, Data export, License, Help (support bundle) built on the existing /ops endpoints; restore stays CLI-only with the command shown as text | owner restore stops services and renames databases on the server PC; a UI trigger needs its own confirmation design
+2026-11-26 | Shell banners: recovery mode (red), backup older than 26 h, read-only license; each query runs only with the matching permission and a paired session | banners must reach every workstream without exposing ops data to users who cannot read it
+2026-11-26 | Recovery release is gated by a review checkbox, not a native confirm dialog | Electron dialogs block the renderer; the checkbox records the owner reviewed the pending list
+2026-11-26 | Support bundle downloads through the existing save-as IPC with a zip extension; the renderer never writes files | rule 9: the main process owns the native dialog and file writes
+2026-11-26 | Versions 0.9.1 (desktop and server) and MIN_CLIENT_VERSION 0.9.1 | rule 15 patch bump: completes Prompt 8 UI; minimum client follows the shared version as in 0.9.0
+2026-11-26 | Settings target (backupCopyDir) and cloud target controls are not in the desktop UI yet | no server endpoint sets the target; cloud target is Prompt 10
+2026-11-26 | Arabic strings for the ops screens were written without a native review | parity test passes; a native speaker should review before pilot

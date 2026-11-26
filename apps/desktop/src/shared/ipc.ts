@@ -72,7 +72,7 @@ export type DiscoveredServer = z.infer<typeof DiscoveredServerSchema>;
 
 export const SaveAsSchema = z.object({
   suggestedName: z.string().min(1).max(200),
-  extension: z.enum(['pdf', 'csv']),
+  extension: z.enum(['pdf', 'csv', 'zip']),
   dataBase64: z.string().min(1).max(50_000_000),
 });
 export type SaveAsInput = z.infer<typeof SaveAsSchema>;

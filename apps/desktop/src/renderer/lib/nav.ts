@@ -45,8 +45,11 @@ export const NAV: NavSection[] = [
       { key: 'taxCodes', path: '/settings/tax-codes', permission: 'taxcode.read', implemented: false },
       { key: 'numbering', path: '/settings/numbering', permission: 'company.update', implemented: false },
       { key: 'devices', path: '/settings/devices', permission: 'device.read', implemented: false },
-      { key: 'backup', path: '/settings/backup', permission: 'backup.read', implemented: false },
-      { key: 'license', path: '/settings/license', permission: 'license.read', implemented: false },
+      { key: 'health', path: '/settings/health', permission: 'backup.read', implemented: true },
+      { key: 'backup', path: '/settings/backup', permission: 'backup.read', implemented: true },
+      { key: 'export', path: '/settings/export', permission: 'backup.export', implemented: true },
+      { key: 'license', path: '/settings/license', permission: 'license.read', implemented: true },
+      { key: 'help', path: '/settings/help', permission: 'backup.read', implemented: true },
     ],
   },
 ];

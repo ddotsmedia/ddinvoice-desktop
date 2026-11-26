@@ -2,9 +2,15 @@ import { BrowserWindow, dialog } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import type { PrintPdfInput, SaveAsInput } from '../shared/ipc';
 
+const FILTERS: Record<SaveAsInput['extension'], { name: string; extensions: string[] }[]> = {
+  pdf: [{ name: 'PDF', extensions: ['pdf'] }],
+  csv: [{ name: 'CSV', extensions: ['csv'] }],
+  zip: [{ name: 'ZIP', extensions: ['zip'] }],
+};
+
 /** Saves bytes chosen by the user; the path comes from the native dialog, never from the renderer. */
 export async function saveAs(owner: BrowserWindow | null, input: SaveAsInput): Promise<{ saved: boolean }> {
-  const filters = input.extension === 'pdf' ? [{ name: 'PDF', extensions: ['pdf'] }] : [{ name: 'CSV', extensions: ['csv'] }];
+  const filters = FILTERS[input.extension];
   const result = await dialog.showSaveDialog(owner ?? BrowserWindow.getFocusedWindow()!, {
     defaultPath: `${input.suggestedName}.${input.extension}`,
     filters,

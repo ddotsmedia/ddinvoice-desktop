@@ -70,6 +70,17 @@ export class Api {
     return res;
   }
 
+  /** GET for binary responses (support bundle zip). Same auth and one refresh retry as `send`. */
+  async getBytes(path: string, retried = false): Promise<Uint8Array> {
+    const headers: Record<string, string> = { Accept: 'application/zip, application/octet-stream', 'X-Device-Id': this.cfg.deviceId };
+    const token = this.cfg.getAccessToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(this.url(path), { headers });
+    if (res.status === 401 && !retried && (await this.cfg.refresh())) return this.getBytes(path, true);
+    if (!res.ok) throw new ApiError(res.status, 'HTTP_ERROR', res.statusText || 'Request failed');
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
   private url(path: string, query?: RequestOptions['query']): string {
     const u = new URL(path, this.cfg.origin);
     for (const [k, v] of Object.entries(query ?? {})) if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, String(v));

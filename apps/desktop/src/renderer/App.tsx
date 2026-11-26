@@ -13,6 +13,7 @@ import { InvoiceRegister } from './screens/invoices/InvoiceRegister';
 import { InvoiceEditor } from './screens/invoices/InvoiceEditor';
 import { Shell } from './components/Shell';
 import { Loading } from './components/Loading';
+import { Backup, DataExport, License, ServerHealth, SupportHelp } from './screens/settings/OpsSettings';
 
 interface Boot {
   config: AppConfig;
@@ -58,6 +59,11 @@ function Gate() {
           <Route path="/sales/invoices" element={<InvoiceRegister />} />
           <Route path="/sales/invoices/new" element={<InvoiceEditor />} />
           <Route path="/sales/invoices/:id" element={<InvoiceEditor />} />
+          <Route path="/settings/health" element={<ServerHealth />} />
+          <Route path="/settings/backup" element={<Backup />} />
+          <Route path="/settings/export" element={<DataExport />} />
+          <Route path="/settings/license" element={<License />} />
+          <Route path="/settings/help" element={<SupportHelp />} />
           <Route path="*" element={<ComingSoon />} />
         </Routes>
       </Shell>

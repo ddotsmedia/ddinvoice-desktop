@@ -5,6 +5,7 @@ import { Button } from '@ddinvoice/ui';
 import { useSession } from '../lib/session';
 import { LiveProvider } from '../lib/live';
 import { visibleNav } from '../lib/nav';
+import { useOpsBanners } from '../lib/ops';
 import { ConnectionBadge } from './ConnectionBadge';
 import { LanguageToggle } from './LanguageToggle';
 
@@ -14,6 +15,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { connection, permissions, me, signOut, clockSkew } = useSession();
   const sections = useMemo(() => visibleNav(permissions), [permissions]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const ops = useOpsBanners();
 
   return (
     <div className="flex h-full text-body">
@@ -74,6 +76,18 @@ export function Shell({ children }: { children: ReactNode }) {
           <div role="alert" className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">
             {t('banner.clockSkew')}
           </div>
+        ) : null}
+
+        {ops.recoveryMode ? (
+          <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-1.5 text-red-900">{t('banner.recovery')}</div>
+        ) : null}
+
+        {ops.backupStale ? (
+          <div role="alert" className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">{t('banner.backupStale')}</div>
+        ) : null}
+
+        {ops.readOnly ? (
+          <div role="alert" className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">{t('banner.readOnly')}</div>
         ) : null}
 
         <main className="min-h-0 flex-1 overflow-auto">

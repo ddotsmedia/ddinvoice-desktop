@@ -23,7 +23,8 @@ try {
   $u = Start-Process $un.FullName -ArgumentList '/S' -PassThru
   if (-not $u.WaitForExit(180000)) { throw 'uninstaller timed out after 3 min' }
   if ($u.ExitCode) { throw "uninstaller exit $($u.ExitCode)" }
-  Start-Sleep 3
+  # A deleted service lingers until the last handle closes.
+  for ($i = 0; $i -lt 30 -and (Get-Service $svc -ErrorAction SilentlyContinue); $i++) { Start-Sleep 2 }
   foreach ($s in $svc) { if (Get-Service $s -ErrorAction SilentlyContinue) { throw "$s still registered" } }
   if (-not (Test-Path (Join-Path $data 'server.json'))) { throw 'data folder was removed' }
 } catch {

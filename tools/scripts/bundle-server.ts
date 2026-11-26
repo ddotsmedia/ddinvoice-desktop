@@ -48,6 +48,12 @@ async function main(): Promise<void> {
   const chromeDir = join(root, 'vendor', 'chrome', 'chrome-headless-shell-win64');
   if (!existsSync(chromeDir)) throw new Error('chrome-headless-shell is not vendored; run pnpm vendor');
   cpSync(chromeDir, join(out, 'chrome'), { recursive: true });
+  // Prisma CLI + schema engine + migrations so a packaged install can run migrate deploy without the repo.
+  const prismaDir = rootReq('prisma', dbDir);
+  const prismaNm = dirname(prismaDir);
+  mkdirSync(join(out, 'prisma-cli'), { recursive: true });
+  for (const e of readdirSync(prismaNm)) if (e !== 'typescript') cpSync(join(prismaNm, e), join(out, 'prisma-cli', 'node_modules', e), { recursive: true, dereference: true });
+  cpSync(join(dbDir, 'prisma'), join(out, 'prisma'), { recursive: true });
   console.log(`bundled to ${out}`);
 }
 

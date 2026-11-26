@@ -117,3 +117,13 @@
 2026-11-26 | Versions 0.9.1 (desktop and server) and MIN_CLIENT_VERSION 0.9.1 | rule 15 patch bump: completes Prompt 8 UI; minimum client follows the shared version as in 0.9.0
 2026-11-26 | Settings target (backupCopyDir) and cloud target controls are not in the desktop UI yet | no server endpoint sets the target; cloud target is Prompt 10
 2026-11-26 | Arabic strings for the ops screens were written without a native review | parity test passes; a native speaker should review before pilot
+2026-11-26 | Deferred install seeds a placeholder company and admin; `configure-server` (run by the wizard) names it | the API and worker need a companyId in server.json to start, and the installer must leave /health green without prompting
+2026-11-26 | Installer runs `migrate --restart` on update (not the app) | NSIS is already elevated per-machine, so no second UAC prompt; the CLI takes the pre-migrate backup
+2026-11-26 | Pilot release is a published prerelease with pilot.yml (copy of latest.yml); promote drops pilot.yml and publishes latest | electron-updater cannot see draft releases; stable clients read latest.yml
+2026-11-26 | Pilot channel opt-in via DDI_UPDATE_CHANNEL or "channel":"pilot" in role.json (or a -pilot version) | one exe for both channels, no rebuild per channel
+2026-11-26 | Server resources ship in every install; workstations simply never register services | one installer, role chosen at install time
+2026-11-26 | Prisma CLI, schema engine and migrations are bundled into dist/prisma-cli and dist/prisma | a packaged server PC has no repo to run migrate deploy from
+2026-11-26 | chrome-headless-shell ships inside dist/chrome (bundle-server) instead of a separate vendor extraResource | avoids duplicating ~250 MB
+2026-11-26 | Payroll-run blocker is wired in the API but always false | no payroll module exists yet; unsynced = pending outbox commands
+2026-11-26 | Uninstall delete-data is a checkbox page plus two confirmations; silent uninstall always keeps data | data loss must be deliberate
+2026-11-26 | Version 0.10.0 (desktop and server) | rule 15 minor bump for Prompt 9; MIN_CLIENT_VERSION 0.10.0 so workstations stay gated until the server is updated

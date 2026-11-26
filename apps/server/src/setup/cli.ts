@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { request } from 'node:https';
 import { basename, dirname, join, resolve } from 'node:path';
-import { PrismaClient, seedDemo } from '@ddinvoice/db';
+import { PrismaClient, hashPassword, seedDemo } from '@ddinvoice/db';
 import { dpapiProtect, readSecrets, type Secrets } from '../secrets';
 import { SERVER_VERSION } from '../version';
 import { restrictAcl } from './acl';
@@ -137,8 +137,12 @@ async function waitHealthy(ctx: Ctx, timeoutMs = 60_000): Promise<void> {
 }
 
 function migrateDeploy(ctx: Ctx, secrets: Secrets): void {
-  const prisma = require.resolve('prisma/build/index.js', { paths: [join(ctx.root, 'packages', 'db')] });
-  run(process.execPath, [prisma, 'migrate', 'deploy', '--schema', join(ctx.root, 'packages', 'db', 'prisma', 'schema.prisma')], {
+  // Packaged install: Prisma CLI and migrations are bundled under dist/. Repo checkout: resolve from packages/db.
+  const bundled = join(ctx.root, 'dist', 'prisma-cli', 'node_modules', 'prisma', 'build', 'index.js');
+  const packaged = existsSync(bundled);
+  const prisma = packaged ? bundled : require.resolve('prisma/build/index.js', { paths: [join(ctx.root, 'packages', 'db')] });
+  const schema = packaged ? join(ctx.root, 'dist', 'prisma', 'schema.prisma') : join(ctx.root, 'packages', 'db', 'prisma', 'schema.prisma');
+  run(nodeExe(ctx), [prisma, 'migrate', 'deploy', '--schema', schema], {
     env: { DATABASE_URL: dbUrl(ctx, OWNER, secrets.ownerPassword) },
   });
 }
@@ -208,12 +212,14 @@ const pgBinDirOf = (ctx: Pick<Ctx, 'root'>) => join(ctx.root, 'vendor', 'pgsql',
 
 async function installServer(opts: Opts): Promise<void> {
   const noService = opts.flags.has('no-service');
+  // Deferred: services run with a placeholder company; the app wizard names it later (configure-server).
+  const deferred = opts.flags.has('deferred');
   const ctx = makeCtx(opts, !noService);
   const setup = readSetupInput(opts.values.get('input'));
   const restoreFile = opts.values.get('restore');
   const recoveryKeyText = opts.values.get('recovery-key');
-  const companyName = setup?.companyNameEn ?? opts.values.get('company-name');
-  const adminEmail = setup?.adminEmail ?? opts.values.get('admin-email');
+  const companyName = setup?.companyNameEn ?? opts.values.get('company-name') ?? (deferred ? 'Unconfigured Company' : undefined);
+  const adminEmail = setup?.adminEmail ?? opts.values.get('admin-email') ?? (deferred ? 'admin@setup.local' : undefined);
   if (!restoreFile && (!companyName || !adminEmail)) throw new Error('--company-name and --admin-email are required (or --restore <file>)');
   if (restoreFile && !recoveryKeyText) throw new Error('--restore needs --recovery-key (printed once when the original PC was installed)');
   if (ctx.service && !isElevated()) throw new Error('install-server must run elevated (Administrator); use --no-service for process mode');
@@ -294,6 +300,7 @@ async function installServer(opts: Opts): Promise<void> {
         pgBinDir: pgBinDirOf(ctx),
         requirePairing: true,
         service: ctx.service,
+        ...(deferred ? { deferred: true } : {}),
       },
       null,
       2,
@@ -317,8 +324,8 @@ async function installServer(opts: Opts): Promise<void> {
   log(ctx, `INSTALLED company=${companyNameOut} companyId=${companyId} port=${ctx.port}`);
   log(ctx, `CA SHA-256 fingerprint: ${pki.caFingerprint}`);
   // Printed once, to stdout only (never the log file). The wizard supplied its own password, so only a generated one is shown.
-  if (!restoreFile && !setup) process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
-  if (!recoveryKeyText) {
+  if (!restoreFile && !setup && !deferred) process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
+  if (!recoveryKeyText && !deferred) {
     // Store it outside this PC: it is the only way to open a backup on another PC.
     process.stdout.write(`Backup recovery key (shown once, keep it outside this PC): ${encodeRecoveryKey(Buffer.from(secrets.backupKey!, 'base64url'))}\n`);
   }
@@ -406,7 +413,54 @@ async function status(opts: Opts): Promise<void> {
 async function migrate(opts: Opts): Promise<void> {
   const ctx = makeCtx(opts, false);
   ctx.pgPort = readConfig(ctx).pgPort;
-  if (!migrateSafely(ctx, loadSecrets(ctx))) process.exitCode = 1;
+  const cfg = readConfig(ctx);
+  const restart = opts.flags.has('restart');
+  const secrets = loadSecrets(ctx);
+  // Post-update: stop API and worker, run the pre-migrate backup + migration (Postgres stays up), start them again.
+  if (restart) {
+    if (cfg.service) {
+      stopService(ctx, SVC_WORKER);
+      stopService(ctx, SVC_API);
+    } else stopApp(ctx);
+  }
+  const ok = migrateSafely(ctx, secrets);
+  if (!ok) process.exitCode = 1;
+  if (restart) {
+    if (cfg.service) for (const id of [SVC_API, SVC_WORKER]) startService(ctx, id);
+    else startApp(ctx);
+  }
+}
+
+/** Finishes a deferred install: names the placeholder company and sets the first admin. Input file is deleted after reading. */
+async function configureServer(opts: Opts): Promise<void> {
+  const ctx = makeCtx(opts, false);
+  const cfg = readConfig(ctx) as ReturnType<typeof readConfig> & { deferred?: boolean };
+  if (!cfg.deferred) throw new Error('server is already configured');
+  const setup = readSetupInput(opts.values.get('input'));
+  if (!setup) throw new Error('configure-server needs --input <file>');
+  ctx.pgPort = cfg.pgPort;
+  const secrets = loadSecrets(ctx);
+  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl(ctx, OWNER, secrets.ownerPassword) } } });
+  try {
+    await prisma.company.update({
+      where: { id: cfg.companyId },
+      data: {
+        legalNameEn: setup.companyNameEn,
+        ...(setup.companyNameAr ? { legalNameAr: setup.companyNameAr } : {}),
+        ...(setup.trn ? { trn: setup.trn } : {}),
+        ...(setup.emirate ? { emirate: setup.emirate } : {}),
+      },
+    });
+    const admin = await prisma.user.findFirstOrThrow({ where: { companyId: cfg.companyId }, orderBy: { createdAt: 'asc' } });
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { email: setup.adminEmail, ...(setup.adminPassword ? { passwordHash: await hashPassword(setup.adminPassword) } : {}) },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+  writeFileSync(paths(ctx).config, JSON.stringify({ ...(JSON.parse(readFileSync(paths(ctx).config, 'utf8')) as object), deferred: undefined, companyName: setup.companyNameEn }, null, 2));
+  log(ctx, `configured company=${setup.companyNameEn}`);
 }
 
 async function rotateCert(opts: Opts): Promise<void> {
@@ -448,6 +502,9 @@ const HELP = `ddinvoice-setup <command> [options]
   restore --file <file.ddbk> [--recovery-key <key>]                         restore on this PC (recovery mode)
   backup-key                                                                 legacy installs: create the backup key once
   uninstall-server [--delete-data] [--data-dir <p>]
+  install-server --deferred [--data-dir <p>]                                 services + placeholder company (installer)
+  configure-server --input <file>                                            finish a deferred install (app wizard)
+  migrate [--restart]                                                        post-update: backup, migrate, restart services
   status | migrate | rotate-cert | pairing-code   [--data-dir <p>]`;
 
 export async function main(argv: string[]): Promise<void> {
@@ -457,6 +514,7 @@ export async function main(argv: string[]): Promise<void> {
     case 'uninstall-server': return uninstallServer(opts);
     case 'status': return status(opts);
     case 'migrate': return migrate(opts);
+    case 'configure-server': return configureServer(opts);
     case 'rotate-cert': return rotateCert(opts);
     case 'pairing-code': return pairingCode(opts);
     case 'restore': return restoreCmd(opts);

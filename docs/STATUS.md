@@ -1,3 +1,10 @@
+## Prompt 9 (0.10.0)
+- One NSIS installer (perMachine, role page, /S /ROLE=server|workstation). Server role runs setup CLI install-server --deferred; the wizard then calls configure-server. Update on a server PC: migrate --restart (pre-migrate backup). Uninstall keeps data unless ticked and confirmed twice.
+- electron-updater (GitHub ddotsmedia/ddinvoice-desktop, latest + pilot), no downgrades, install only when no unsynced drafts / open payroll run. Signing: Azure Trusted Signing when 5 secrets set, else unsigned with warning.
+- release.yml pilot job: lint, typecheck, test, vendor, dist, smoke, prerelease. Promote copies to latest.
+- Not verified here: smoke-installer.ps1 (no elevation; see TESTING.md), signing, updater against a real release, installer UI pages (built, not clicked).
+- Open: AZURE_PUBLISHER_NAME repo variable must match the certificate subject for signature verification; payroll blocker pending a payroll module.
+
 # Status
 Prompt 8 Backup, restore, health, licensing, support bundle, data export: server 0.9.0, desktop 0.9.0. Prompts 1-7: done.
 

@@ -114,5 +114,10 @@ export interface DdiApi {
   setup: { installServer(input: InstallServerInput): Promise<InstallServerResult> };
   print: { pdf(input: PrintPdfInput): Promise<{ saved: boolean }> };
   file: { saveAs(input: SaveAsInput): Promise<{ saved: boolean }> };
+  update: {
+    state(): Promise<{ status: 'idle' | 'checking' | 'downloading' | 'ready' | 'error'; version: string | null; blocked: boolean }>;
+    setBlockers(b: { unsyncedDrafts: number; openPayrollRun: boolean }): Promise<void>;
+    install(): Promise<boolean>;
+  };
   shell: { openExternal(url: string): Promise<void> };
 }

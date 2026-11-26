@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -15,6 +15,16 @@ function paths(): { node: string; script: string } {
     node: process.env.DDI_NODE ?? join(root, 'vendor', 'node', 'node.exe'),
     script: process.env.DDI_SETUP_SCRIPT ?? join(root, 'dist', 'setup.cjs'),
   };
+}
+
+/** True when the installer registered the services but the company is not named yet. */
+function isDeferred(): boolean {
+  try {
+    const f = join(process.env.PROGRAMDATA ?? 'C:\ProgramData', 'DDInvoice', 'server.json');
+    return (JSON.parse(readFileSync(f, 'utf8')) as { deferred?: boolean }).deferred === true;
+  } catch {
+    return false;
+  }
 }
 
 const psQuote = (s: string): string => `'${s.replace(/'/g, "''")}'`;
@@ -33,7 +43,7 @@ export async function installServer(input: InstallServerInput): Promise<InstallS
   try {
     await writeFile(file, JSON.stringify(input), { encoding: 'utf8', mode: 0o600 });
     const elevated =
-      `$p = Start-Process -FilePath ${psQuote(node)} -ArgumentList @(${psQuote(script)}, 'install-server', '--input', ${psQuote(file)}) ` +
+      `$p = Start-Process -FilePath ${psQuote(node)} -ArgumentList @(${psQuote(script)}, '${isDeferred() ? 'configure-server' : 'install-server'}', '--input', ${psQuote(file)}) ` +
       `-Verb RunAs -Wait -WindowStyle Hidden -PassThru; exit $p.ExitCode`;
     try {
       await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', elevated], { windowsHide: true });

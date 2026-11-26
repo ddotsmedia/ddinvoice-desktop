@@ -22,6 +22,11 @@ const api: DdiApi = {
   setup: { installServer: (input) => ipcRenderer.invoke(CHANNELS.setupInstallServer, input) },
   print: { pdf: (input) => ipcRenderer.invoke(CHANNELS.printPdf, input) },
   file: { saveAs: (input) => ipcRenderer.invoke(CHANNELS.fileSaveAs, input) },
+  update: {
+    state: () => ipcRenderer.invoke(CHANNELS.updateState),
+    setBlockers: (b) => ipcRenderer.invoke(CHANNELS.updateBlockers, b),
+    install: () => ipcRenderer.invoke(CHANNELS.updateInstall),
+  },
   shell: { openExternal: (url) => ipcRenderer.invoke(CHANNELS.shellOpenExternal, url) },
 };
 

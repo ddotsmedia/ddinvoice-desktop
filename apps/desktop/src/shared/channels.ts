@@ -13,5 +13,8 @@ export const CHANNELS = {
   setupInstallServer: 'setup:installServer',
   printPdf: 'print:pdf',
   fileSaveAs: 'file:saveAs',
+  updateState: 'update:state',
+  updateBlockers: 'update:blockers',
+  updateInstall: 'update:install',
   shellOpenExternal: 'shell:openExternal',
 } as const;

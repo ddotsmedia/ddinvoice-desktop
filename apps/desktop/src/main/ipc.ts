@@ -16,6 +16,7 @@ import {
 import type { ConfigStore } from './config-store';
 import { discoverServers } from './discovery';
 import { installServer } from './setup';
+import { BlockersSchema, getUpdateState, installNow, setBlockers } from './updater';
 import { isTrustedUrl, openExternal } from './window';
 import { printPdf, saveAs } from './files';
 import type { TokenStore } from './token-store';
@@ -75,6 +76,9 @@ export function registerIpc(deps: IpcDeps): void {
   });
 
   handle(CHANNELS.setupInstallServer, InstallServerSchema, (input) => installServer(input));
+  handle(CHANNELS.updateState, null, () => getUpdateState());
+  handle(CHANNELS.updateBlockers, BlockersSchema, (b) => setBlockers(b));
+  handle(CHANNELS.updateInstall, null, () => installNow());
   handle(CHANNELS.printPdf, PrintPdfSchema, (input) => printPdf(deps.getWindow(), input));
   handle(CHANNELS.fileSaveAs, SaveAsSchema, (input) => saveAs(deps.getWindow(), input));
   handle(CHANNELS.shellOpenExternal, OpenExternalSchema, async (input) => {

@@ -6,6 +6,7 @@ import { useSession } from '../lib/session';
 import { LiveProvider } from '../lib/live';
 import { visibleNav } from '../lib/nav';
 import { useOpsBanners } from '../lib/ops';
+import { useUpdater } from '../lib/updater';
 import { ConnectionBadge } from './ConnectionBadge';
 import { LanguageToggle } from './LanguageToggle';
 
@@ -16,6 +17,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const sections = useMemo(() => visibleNav(permissions), [permissions]);
   const [menuOpen, setMenuOpen] = useState(false);
   const ops = useOpsBanners();
+  const updater = useUpdater();
 
   return (
     <div className="flex h-full text-body">
@@ -84,6 +86,13 @@ export function Shell({ children }: { children: ReactNode }) {
 
         {ops.backupStale ? (
           <div role="alert" className="border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">{t('banner.backupStale')}</div>
+        ) : null}
+
+        {updater.info?.status === 'ready' ? (
+          <div role="status" className="flex items-center gap-3 border-b border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-900">
+            <span>{updater.info.blocked ? t('banner.updateBlocked') : t('banner.updateReady', { version: updater.info.version })}</span>
+            {updater.info.blocked ? null : <Button variant="ghost" onClick={updater.install}>{t('banner.updateInstall')}</Button>}
+          </div>
         ) : null}
 
         {ops.readOnly ? (

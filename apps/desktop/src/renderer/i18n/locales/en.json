@@ -37,6 +37,9 @@
     "clockSkew": "This computer's clock differs from the server by more than 5 minutes. Issue dates use server time; fix the clock to avoid confusing records.",
     "recovery": "Recovery mode: external sends (e-invoice, sync, e-mail) are paused. Review them under Settings > Backup.",
     "backupStale": "No good backup in the last 26 hours. Ask the owner to check Settings > Server health.",
+    "updateReady": "Version {{version}} is ready. It installs when you quit, or now.",
+    "updateBlocked": "An update is ready but waits until unsynced drafts are sent and no payroll run is open.",
+    "updateInstall": "Install now",
     "readOnly": "License expired or invalid: read-only mode. You can view, print and export."
   },
   "topbar": {

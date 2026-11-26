@@ -31,20 +31,33 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build pilot assets and prerelease
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Fetch vendors (sha256 verified by the fetch scripts)
+        run: pnpm vendor
+      - name: Build installer (signed when Azure secrets exist, unsigned with a warning otherwise)
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
+          AZURE_PUBLISHER_NAME: ${{ vars.AZURE_PUBLISHER_NAME }}
+        run: pnpm --filter @ddinvoice/desktop dist
+      - name: Smoke test installer (silent install, services, /health, uninstall, data kept)
+        shell: pwsh
+        run: ./tools/scripts/smoke-installer.ps1
+      - name: Create pilot prerelease (published as prerelease: the updater cannot see drafts)
         shell: bash
         run: |
           set -euo pipefail
           V=$(node -p "require('./apps/desktop/package.json').version")
           TAG="v${V}-pilot.${RUN_NUMBER}"
-          PREV=$(gh release list --limit 50 --json tagName -q '.[].tagName' | grep -- '-pilot\.' | head -n1 || true)
+          PREV=$(gh release list --limit 50 --json tagName -q '.[].tagName' | grep -- '-pilot.' | head -n1 || true)
           mkdir -p assets
-          if node -e "process.exit(require('./package.json').scripts?.dist ? 0 : 1)"; then
-            pnpm dist
-            cp -r dist/* assets/
-          else
-            git archive --format=zip -o "assets/ddinvoice-source-${TAG}.zip" "$SHA"
-          fi
+          cp release/DDInvoice-Setup-*.exe release/DDInvoice-Setup-*.exe.blockmap release/latest.yml assets/
+          cp release/latest.yml assets/pilot.yml
           { echo "Channel: pilot"; echo; git log --pretty='- %s (%h)' ${PREV:+"$PREV..."}"$SHA"; } > notes.md
           gh release create "$TAG" --target "$SHA" --prerelease --title "Pilot $TAG" --notes-file notes.md assets/*
   promote:
@@ -68,4 +81,5 @@ jobs:
           SHA=$(git rev-list -n1 "$PILOT")
           mkdir -p assets
           gh release download "$PILOT" --dir assets --clobber
+          rm -f assets/pilot.yml # stable clients read latest.yml
           gh release create "v$VERSION" --target "$SHA" --latest --title "v$VERSION" --notes "Promoted from $PILOT" assets/*

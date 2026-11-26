@@ -6,13 +6,14 @@
                       4,
                       5,
                       6,
-                      7
+                      7,
+                      8
                   ],
     "skipped":  [
-                     {
-                         "n":  15,
-                         "reason":  "payroll inputs missing"
-                     }
+                    {
+                        "n":  15,
+                        "reason":  "payroll inputs missing"
+                    }
                 ],
     "runs":  [
                  {
@@ -68,6 +69,15 @@
                      "costUsd":  0.8326,
                      "attempts":  1,
                      "commit":  "6dcf268"
+                 },
+                 {
+                     "n":  8,
+                     "model":  "haiku",
+                     "startedAt":  "2026-11-26T23:26:55.6100521+04:00",
+                     "endedAt":  "2026-11-26T23:34:26.5960115+04:00",
+                     "costUsd":  0.1848,
+                     "attempts":  1,
+                     "commit":  "d7d80cf"
                  }
              ]
 }

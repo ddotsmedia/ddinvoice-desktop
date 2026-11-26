@@ -25,7 +25,7 @@ try {
   if (-not (Test-Path (Join-Path $data 'server.json'))) { throw 'data folder was removed' }
 } catch {
   $fail = $_
-  foreach ($l in 'install-out.log', 'logssetup.log', 'logsserver.log') { $lf = Join-Path $data $l; if (Test-Path $lf) { Write-Host "--- $l (tail)"; Get-Content $lf -Tail 40 } }
+  foreach ($l in 'install-out.log', 'logs\setup.log', 'logs\server.log') { $lf = Join-Path $data $l; if (Test-Path $lf) { Write-Host "--- $l (tail)"; Get-Content $lf -Tail 40 } }
 }
 finally {
   # Test cleanup of this run's own temp install data only.

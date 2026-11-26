@@ -49,7 +49,7 @@ d('health, system and outbox worker', () => {
   it('worker drains a handled topic to DONE', async () => {
     const prisma = t.app.get(PrismaService);
     const row = await prisma.client.outbox.create({
-      data: { companyId: t.companyId, topic: 'document.render', payload: { docId: 'x' } },
+      data: { companyId: t.companyId, topic: 'einvoice.submit', payload: { docId: 'x' } },
     });
     const worker = new OutboxWorker(prisma, t.config, new Map(STUB_HANDLERS));
     await worker.tick(new Date(), 50);

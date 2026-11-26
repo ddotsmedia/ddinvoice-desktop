@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="{{lang}}" dir="{{dir}}">
+<head>
+<meta charset="utf-8">
+<title>{{number}}</title>
+{{> styles}}
+{{> footer}}
+</head>
+<body>
+{{#if watermark}}<div class="watermark"><bdi>{{watermark}}</bdi></div>{{/if}}
+{{> header}}
+{{> parties}}
+{{> lines}}
+{{> totals}}
+{{> tax-summary}}
+{{> references}}
+{{#if bank}}{{> bank-details}}{{/if}}
+</body>
+</html>

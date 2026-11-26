@@ -1,7 +1,7 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient, seedDemo, hashPassword } from '@ddinvoice/db';
@@ -49,7 +49,9 @@ export async function createTenant(opts: { openPeriod?: boolean } = {}): Promise
   }
 
   const dataDir = mkdtempSync(join(tmpdir(), 'ddinv-test-'));
-  const config = parseConfig({ port: 47820, dbUrl: url, dataDir, companyId, requirePairing: false }) // never listens in tests;
+  // chromePath is only used by preview/archive renders; Chrome launches lazily.
+  const chromePath = process.env.DD_CHROME_PATH ?? resolve(__dirname, '../../../vendor/chrome/chrome-headless-shell-win64/chrome-headless-shell.exe');
+  const config = parseConfig({ port: 47820, dbUrl: url, dataDir, companyId, requirePairing: false, chromePath }); // never listens in tests
   const app = await createApp(config, { logger: process.env.DD_TEST_LOG ? ['error'] : false });
   await app.init();
 

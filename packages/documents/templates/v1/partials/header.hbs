@@ -1,0 +1,15 @@
+<div class="row">
+  <div class="col">
+    <h1><bdi>{{title}}</bdi></h1>
+    <div class="muted"><bdi>{{labels.number}}</bdi>: <bdi>{{number}}</bdi></div>
+  </div>
+  <div class="col">
+    <table class="meta">
+      <tr><td><bdi>{{labels.issueDate}}</bdi></td><td class="num"><bdi>{{issueDate}}</bdi></td></tr>
+      {{#if showSupplyDate}}<tr><td><bdi>{{labels.supplyDate}}</bdi></td><td class="num"><bdi>{{supplyDate}}</bdi></td></tr>{{/if}}
+      {{#if dueDate}}<tr><td><bdi>{{labels.dueDate}}</bdi></td><td class="num"><bdi>{{dueDate}}</bdi></td></tr>{{/if}}
+      <tr><td><bdi>{{labels.currency}}</bdi></td><td class="num"><bdi>{{currency}}</bdi></td></tr>
+      {{#if showFx}}<tr><td><bdi>{{labels.fxRate}}</bdi></td><td class="num"><bdi>{{fxRate}}</bdi></td></tr>{{/if}}
+    </table>
+  </div>
+</div>

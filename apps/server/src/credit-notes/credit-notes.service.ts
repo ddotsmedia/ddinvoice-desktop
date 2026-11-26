@@ -13,7 +13,7 @@ import type { ServerConfig } from '../config';
 import { PrismaService, type Db, type Tx } from '../core/prisma.service';
 import { accountMapFor, computeDocument, journalDocLines, resolveLines, type ComputedDocument, type ComputedLine, type ResolvedLine } from '../documents/lines';
 import { assertPeriodOpen, postJournal, toPostLines } from '../documents/posting';
-import { refreshSettlement, resolveStoredLines, writeSnapshot } from '../documents/stored';
+import { buyerParty, enqueueRenders, refreshSettlement, resolveStoredLines, sellerParty, snapshotLines, writeSnapshot } from '../documents/stored';
 import type { CreateCreditNoteInput } from './credit-notes.schemas';
 
 const lineRow = (companyId: string, creditNoteId: string, lineNo: number, l: ResolvedLine, c: ComputedLine) => ({
@@ -89,6 +89,7 @@ export class CreditNotesService {
         issueDocument(cn.status as DocStatus);
         const inv = await tx.invoice.findFirstOrThrow({ where: { id: cn.invoiceId } });
         const customer = await tx.customer.findFirstOrThrow({ where: { id: cn.customerId } });
+        const company = await this.prisma.client.company.findUniqueOrThrow({ where: { id: this.config.companyId } });
 
         const credited = await tx.creditNote.aggregate({ where: { invoiceId: inv.id, status: 'ISSUED' }, _sum: { total: true } });
         const alreadyCredited = new Decimal(credited._sum.total?.toString() ?? 0);
@@ -129,9 +130,13 @@ export class CreditNotesService {
           invoiceNumber: inv.number,
           issueDate: isoDate(today),
           reason: cn.reason,
+          customerId: cn.customerId,
           currency: cn.currency,
           fxRate,
+          seller: sellerParty(company),
+          buyer: buyerParty(customer),
           journalNumber: posted.number,
+          lines: snapshotLines(resolved, computed.lines),
           totals: totalsData(computed),
         };
         const snapshotId = await writeSnapshot(tx, this.config.companyId, 'CREDIT_NOTE', cn.id, payload);
@@ -149,7 +154,7 @@ export class CreditNotesService {
           },
         });
         await refreshSettlement(tx, inv.id);
-        await tx.outbox.create({ data: { companyId: this.config.companyId, topic: 'document.render', payload: { docType: 'CREDIT_NOTE', docId: cn.id, snapshotId } } });
+        await enqueueRenders(tx, this.config.companyId, 'CREDIT_NOTE', cn.id, snapshotId);
         return this.load(tx, cn.id);
       }),
     );

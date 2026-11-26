@@ -1,0 +1,14 @@
+<div class="row section">
+  <div class="col box">
+    <strong><bdi>{{labels.seller}}</bdi></strong>
+    {{#each seller.names}}<div dir="{{dir}}"><bdi>{{text}}</bdi></div>{{/each}}
+    {{#each seller.addresses}}<div class="muted" dir="{{dir}}"><bdi>{{text}}</bdi></div>{{/each}}
+    <div><bdi>{{labels.trn}}: {{seller.trn}}</bdi></div>
+  </div>
+  <div class="col box">
+    <strong><bdi>{{labels.buyer}}</bdi></strong>
+    {{#each buyer.names}}<div dir="{{dir}}"><bdi>{{text}}</bdi></div>{{/each}}
+    {{#each buyer.addresses}}<div class="muted" dir="{{dir}}"><bdi>{{text}}</bdi></div>{{/each}}
+    {{#if buyer.trn}}<div><bdi>{{labels.trn}}: {{buyer.trn}}</bdi></div>{{/if}}
+  </div>
+</div>

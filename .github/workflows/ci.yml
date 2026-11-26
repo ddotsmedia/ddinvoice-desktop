@@ -18,6 +18,7 @@ jobs:
           node-version: 22
           cache: pnpm # pnpm store cache
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsx tools/scripts/fetch-chrome.ts # PDF renderer tests need the pinned Chrome
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test --reporter=default --reporter=junit --outputFile=test-results/junit.xml

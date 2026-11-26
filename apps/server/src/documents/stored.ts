@@ -2,7 +2,10 @@ import { Decimal, deriveSettlement } from '@ddinvoice/domain';
 import { canonicalJson, sha256Hex } from '../common/canonical';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../core/prisma.service';
-import type { ResolvedLine } from './lines';
+import { TEMPLATE_VERSION, type SnapshotLine, type SnapshotParty } from '@ddinvoice/documents';
+import type { ComputedLine, ResolvedLine } from './lines';
+
+export const PDF_LANGUAGES = ['en', 'ar', 'bi'] as const;
 
 export interface StoredLineRow {
   description: string;
@@ -39,7 +42,7 @@ export async function resolveStoredLines(tx: Tx, rows: StoredLineRow[]): Promise
 export async function writeSnapshot(tx: Tx, companyId: string, docType: string, docId: string, payload: object): Promise<string> {
   const json = canonicalJson(payload);
   const snap = await tx.issueSnapshot.create({
-    data: { companyId, docType, docId, payload: JSON.parse(json) as object, sha256: sha256Hex(json), templateVersion: '1' },
+    data: { companyId, docType, docId, payload: JSON.parse(json) as object, sha256: sha256Hex(json), templateVersion: TEMPLATE_VERSION },
   });
   return snap.id;
 }
@@ -55,4 +58,36 @@ export async function refreshSettlement(tx: Tx, invoiceId: string) {
     data: { settlementStatus: deriveSettlement(due, paid) },
   });
   return { due: due.toFixed(4), paid: paid.toFixed(4), open: due.minus(paid).toFixed(4) };
+}
+
+/** Seller as frozen on the snapshot (company legal identity at issue time). */
+export function sellerParty(c: { legalNameEn: string; legalNameAr: string; trn: string; addressEn: string; addressAr: string }): SnapshotParty {
+  return { nameEn: c.legalNameEn, nameAr: c.legalNameAr, trn: c.trn, addressEn: c.addressEn, addressAr: c.addressAr };
+}
+
+/** Buyer as frozen on the snapshot; TRN is printed only when the customer is VAT-registered. */
+export function buyerParty(c: { nameEn: string; nameAr: string; trn: string | null; addressEn: string; addressAr: string }): SnapshotParty {
+  return { nameEn: c.nameEn, nameAr: c.nameAr, trn: c.trn ?? null, addressEn: c.addressEn, addressAr: c.addressAr };
+}
+
+/** Line rows for the PDF snapshot: amounts already computed by the domain engine. */
+export function snapshotLines(lines: ResolvedLine[], computed: ComputedLine[]): SnapshotLine[] {
+  return lines.map((l, i) => ({
+    lineNo: i + 1,
+    description: l.description,
+    qty: l.qty,
+    unitPrice: l.unitPrice,
+    taxCode: l.tax.code,
+    taxRate: new Decimal(l.tax.rate.toString()).times(100).toFixed(),
+    net: computed[i]!.net.toFixed(4),
+    tax: computed[i]!.tax.toFixed(4),
+    gross: computed[i]!.gross.toFixed(4),
+  }));
+}
+
+/** One outbox row per language: each archived PDF is rendered by the worker from the snapshot. */
+export async function enqueueRenders(tx: Tx, companyId: string, docType: string, docId: string, snapshotId: string): Promise<void> {
+  for (const lang of PDF_LANGUAGES) {
+    await tx.outbox.create({ data: { companyId, topic: 'document.render', payload: { docType, docId, snapshotId, lang } } });
+  }
 }

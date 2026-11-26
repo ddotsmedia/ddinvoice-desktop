@@ -1,0 +1,8 @@
+<table class="section">
+  <thead><tr><th><bdi>{{labels.code}}</bdi></th><th class="num"><bdi>{{labels.rate}}</bdi></th><th class="num"><bdi>{{labels.taxable}}</bdi></th><th class="num"><bdi>{{labels.taxAmount}}</bdi></th></tr></thead>
+  <tbody>
+    {{#each taxSummary}}
+    <tr><td><bdi>{{code}}</bdi></td><td class="num"><bdi>{{rate}}%</bdi></td><td class="num"><bdi>{{taxable}}</bdi></td><td class="num"><bdi>{{tax}}</bdi></td></tr>
+    {{/each}}
+  </tbody>
+</table>

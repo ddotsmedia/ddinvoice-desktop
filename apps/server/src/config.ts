@@ -15,6 +15,8 @@ const ConfigSchema = z.object({
   secretsPath: z.string().min(1).optional(),
   localToken: z.string().min(1).optional(),
   caPath: z.string().min(1).optional(),
+  /** Vendored chrome-headless-shell.exe used by the document renderer (installed under the server bundle). */
+  chromePath: z.string().min(1).optional(),
   companyName: z.string().min(1).optional(),
   /** Devices must be paired (X-Device-Id header). Only tests/dev may disable. */
   requirePairing: z.boolean().default(true),
@@ -53,6 +55,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, decrypt?: (b64:
     keyPath: env.DD_KEY_PATH,
     companyId: env.DD_COMPANY_ID,
     caPath: env.DD_CA_PATH,
+    chromePath: env.DD_CHROME_PATH,
     requirePairing: env.DD_REQUIRE_PAIRING !== '0',
   });
 }

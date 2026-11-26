@@ -13,7 +13,7 @@ import type { ServerConfig } from '../config';
 import { PrismaService, type Tx } from '../core/prisma.service';
 import { accountMapFor, computeDocument, journalDocLines, resolveLines, type ComputedDocument, type ComputedLine, type ResolvedLine } from '../documents/lines';
 import { assertPeriodOpen, postJournal, toPostLines } from '../documents/posting';
-import { resolveStoredLines, writeSnapshot } from '../documents/stored';
+import { buyerParty, enqueueRenders, resolveStoredLines, sellerParty, snapshotLines, writeSnapshot } from '../documents/stored';
 import type { AuthContext } from '../common/auth-context';
 import type { CreateInvoiceInput, ListInvoicesQuery, UpdateInvoiceInput } from './invoices.schemas';
 
@@ -241,18 +241,11 @@ export class InvoicesService {
           customerId: inv.customerId,
           currency: inv.currency,
           fxRate,
+          supplyDate: inv.supplyDate ? isoDate(inv.supplyDate) : null,
+          seller: sellerParty(company),
+          buyer: buyerParty(customer),
           journalNumber: posted.number,
-          lines: resolved.map((l, i) => ({
-            lineNo: i + 1,
-            description: l.description,
-            qty: l.qty,
-            unitPrice: l.unitPrice,
-            taxCode: l.tax.code,
-            net: computed.lines[i]!.net.toFixed(4),
-            tax: computed.lines[i]!.tax.toFixed(4),
-            gross: computed.lines[i]!.gross.toFixed(4),
-            accountId: l.accountId,
-          })),
+          lines: snapshotLines(resolved, computed.lines),
           totals: totalsData(computed),
         };
         const snapshotId = await writeSnapshot(tx, this.config.companyId, 'INVOICE', inv.id, payload);
@@ -276,7 +269,7 @@ export class InvoicesService {
           },
         });
 
-        await tx.outbox.create({ data: { companyId: this.config.companyId, topic: 'document.render', payload: { docType: 'INVOICE', docId: inv.id, snapshotId } } });
+        await enqueueRenders(tx, this.config.companyId, 'INVOICE', inv.id, snapshotId);
         if (einvoiceApplies) {
           await tx.outbox.create({ data: { companyId: this.config.companyId, topic: 'einvoice.submit', payload: { docType: 'INVOICE', docId: inv.id, snapshotId } } });
         }

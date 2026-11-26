@@ -41,6 +41,13 @@ async function main(): Promise<void> {
   const nm = join(out, 'node_modules');
   cpSync(argonDir, join(nm, 'argon2'), { recursive: true });
   for (const dep of ['@phc/format', 'node-gyp-build', 'node-addon-api']) cpSync(rootReq(dep, argonDir), join(nm, dep), { recursive: true });
+  // Document renderer: templates and fonts (packages/documents) and the pinned Chrome build (vendor/chrome).
+  const docsDir = join(root, 'packages', 'documents');
+  cpSync(join(docsDir, 'templates'), join(out, 'documents', 'templates'), { recursive: true });
+  cpSync(join(docsDir, 'fonts'), join(out, 'documents', 'fonts'), { recursive: true });
+  const chromeDir = join(root, 'vendor', 'chrome', 'chrome-headless-shell-win64');
+  if (!existsSync(chromeDir)) throw new Error('chrome-headless-shell is not vendored; run pnpm vendor');
+  cpSync(chromeDir, join(out, 'chrome'), { recursive: true });
   console.log(`bundled to ${out}`);
 }
 

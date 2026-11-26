@@ -1,0 +1,7 @@
+<table class="totals">
+  <tr><td><bdi>{{labels.subtotal}}</bdi></td><td class="num"><bdi>{{totals.subtotal}}</bdi></td></tr>
+  <tr><td><bdi>{{labels.discount}}</bdi></td><td class="num"><bdi>{{totals.discount}}</bdi></td></tr>
+  <tr><td><bdi>{{labels.vat}} (AED)</bdi></td><td class="num"><bdi>{{totals.vat}}</bdi></td></tr>
+  <tr class="grand"><td><bdi>{{labels.total}} ({{currency}})</bdi></td><td class="num"><bdi>{{totals.total}}</bdi></td></tr>
+  {{#if showFx}}<tr><td><bdi>{{labels.totalAed}}</bdi></td><td class="num"><bdi>{{totals.totalAed}}</bdi></td></tr>{{/if}}
+</table>

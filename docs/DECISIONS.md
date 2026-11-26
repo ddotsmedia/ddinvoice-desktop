@@ -65,3 +65,17 @@
 2026-11-26 | eslint-plugin-i18next 6.1.5 at root; no-literal-string on renderer TSX | rule 10
 2026-11-26 | pnpm added lucide-react@1.81.0 to minimumReleaseAgeExclude | pnpm prompt for a package younger than the release-age gate; review before next bump
 2026-11-26 | Desktop and server 0.6.0; MIN_CLIENT_VERSION 0.6.0 | rule 15; a server test requires minClient == version, so 0.5.x clients are blocked
+2026-11-26 | Renderer: puppeteer-core 25.19.0 with vendored chrome-headless-shell 158.0.8127.88 (win64, sha256 pinned in tools/scripts/fetch-chrome.ts); HTML opened from a private temp file via file://, JS off, all non-font requests aborted | about:blank cannot load file:// fonts (Arial fallback observed); browser recycled every 200 renders
+2026-11-26 | Page footer "Page X of Y" is a CSS @page margin box, not Chrome footerTemplate | footerTemplate runs in its own document and cannot load the bundled Noto fonts
+2026-11-26 | Fonts: Noto Sans, Noto Sans Arabic, Noto Naskh Arabic woff2 (latin + arabic subsets, 400/700) copied from pinned @fontsource 5.3.0 packages into packages/documents/fonts | offline, no runtime CDN
+2026-11-26 | IssueSnapshot payload now carries seller and buyer (name, TRN, address), supplyDate, line taxRate, and credit-note lines; templateVersion 'v1' | rendering must not read live records; logo not printed, so logo changes cannot alter archives
+2026-11-26 | Every issued invoice and credit note enqueues document.render for en, ar and bi | per-customer language preference does not exist yet; bilingual is the superset
+2026-11-26 | Archive path documents/<yyyy>/<docType>/<number>-<lang>.pdf relative to dataDir; idempotency = Document row per snapshot+language, checked before render | Document has no unique index (needs a migration); outbox claim lock keeps one worker per job
+2026-11-26 | GET /documents/:docType/:docId/pdf (document.read) returns 409 PDF_PENDING until rendered; POST /documents/preview (document.read, Idempotency-Key skipped) renders a DRAFT watermark PDF, nothing stored | binary responses must not be cached as idempotent JSON
+2026-11-26 | Line description printed as stored for every language; no Arabic line text yet | item/line schema has one description field
+2026-11-26 | Receipt, quote and statement .hbs not written; bank details partial exists but snapshot has no bank data | out of this prompt's invoice/credit-note scope
+2026-11-26 | Desktop Print (Ctrl+P) not built in this change | desktop work deferred; archive and API are in place
+2026-11-26 | Server and desktop 0.7.0; MIN_CLIENT_VERSION 0.7.0 | rule 15 and the minClient==version test; 0.6.x clients are blocked
+2026-11-26 | PDF test suites skip when the vendored Chrome is absent (Linux db job); Windows ci job runs fetch-chrome before tests | Chrome is Windows-only; the db job covers DB paths
+2026-11-26 | Outbox test drains einvoice.submit (still stubbed) instead of document.render | document.render is now a real handler
+2026-11-26 | minimumReleaseAgeExclude: puppeteer-core@25.19.0 and @puppeteer/browsers@3.3.0 | pnpm release-age gate blocked the pinned renderer; pinned exact, review before next bump

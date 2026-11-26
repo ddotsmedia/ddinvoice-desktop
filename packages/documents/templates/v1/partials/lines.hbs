@@ -1,0 +1,18 @@
+<table class="section">
+  <thead>
+    <tr>
+      <th>#</th><th><bdi>{{labels.description}}</bdi></th><th class="num"><bdi>{{labels.qty}}</bdi></th>
+      <th class="num"><bdi>{{labels.unitPrice}}</bdi></th><th class="num"><bdi>{{labels.taxRate}}</bdi></th>
+      <th class="num"><bdi>{{labels.net}}</bdi></th><th class="num"><bdi>{{labels.taxAmount}}</bdi></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each lines}}
+    <tr>
+      <td><bdi>{{lineNo}}</bdi></td><td>{{description}}</td><td class="num"><bdi>{{qty}}</bdi></td>
+      <td class="num"><bdi>{{unitPrice}}</bdi></td><td class="num"><bdi>{{taxRate}}%</bdi></td>
+      <td class="num"><bdi>{{net}}</bdi></td><td class="num"><bdi>{{taxAmount}}</bdi></td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>

@@ -17,6 +17,7 @@ import { CreditNotesModule } from './credit-notes/credit-notes.controller';
 import { QuotesModule } from './quotes/quotes.controller';
 import { PaymentsModule } from './payments/payments.controller';
 import { JournalsModule } from './journals/journals.module';
+import { DocumentsModule } from './documents/documents.module';
 import { ApiErrorFilter } from './common/error.filter';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { AuditInterceptor } from './common/audit.interceptor';
@@ -42,6 +43,7 @@ export class AppModule {
         QuotesModule,
         PaymentsModule,
         JournalsModule,
+        DocumentsModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -1,0 +1,1 @@
+{"currency":"AED","docDiscount":{"pct":"10"},"lines":[{"qty":"2","unitPrice":"100","discountPct":"10","taxCode":"SR"},{"qty":"1","unitPrice":"50","discountAmt":"5","taxCode":"SR"}],"expected":{"subtotal":"250.00","discountTotal":"47.50","taxTotal":"10.13","rcTaxTotal":"0.00","total":"212.63"}}

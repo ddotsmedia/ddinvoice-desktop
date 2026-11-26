@@ -1,0 +1,1 @@
+{"currency":"USD","fxRate":"3.6725","lines":[{"qty":"1","unitPrice":"1000.00","taxCode":"SR"}],"expected":{"subtotal":"1000.00","discountTotal":"0.00","taxTotal":"50.00","rcTaxTotal":"0.00","total":"1050.00","arAed":"3856.13"}}

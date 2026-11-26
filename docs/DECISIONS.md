@@ -13,3 +13,8 @@
 2026-11-26 | Runner precheck ignores untracked files (git status --untracked-files=no) | root PHASES.md is an untracked duplicate; tracked-clean is the rule's intent
 2026-11-26 | claude -p run without --max-turns | flag not present in claude CLI 2.1.321
 2026-11-26 | Runner pipes prompt via stdin to claude -p | avoids PowerShell native-arg quoting of multi-line prompts
+2026-11-26 | Domain tax: round per line then sum; doc discount allocated pro-rata to line nets (remainder on last line), tax recomputed per line on discounted net | deterministic, no penny drift
+2026-11-26 | RC lines: tax self-assessed (rcTaxTotal), excluded from taxTotal/total; gross=net | RC tax not charged to customer
+2026-11-26 | Foreign-currency journal: each line converted+rounded to AED, AR = sum of converted credits | guarantees balance without rounding account
+2026-11-26 | Domain package test script runs with --coverage (95% lines threshold) | enforce threshold in pnpm test
+2026-11-26 | Settlement derived from (amount due after credit notes, allocated); void of issued doc always throws | immutability rule 5

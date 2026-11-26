@@ -1,0 +1,1 @@
+{"currency":"AED","lines":[{"qty":"1","unitPrice":"100","taxCode":"SR"},{"qty":"1","unitPrice":"200","taxCode":"ZR"},{"qty":"1","unitPrice":"50","taxCode":"EX"},{"qty":"1","unitPrice":"10","taxCode":"OOS"}],"expected":{"subtotal":"360.00","discountTotal":"0.00","taxTotal":"5.00","rcTaxTotal":"0.00","total":"365.00"}}

@@ -1,0 +1,1 @@
+{"currency":"AED","lines":[{"qty":"1","unitPrice":"1000","taxCode":"RC"},{"qty":"1","unitPrice":"100","taxCode":"SR"}],"expected":{"subtotal":"1100.00","discountTotal":"0.00","taxTotal":"5.00","rcTaxTotal":"50.00","total":"1105.00","arAed":"1105.00"}}

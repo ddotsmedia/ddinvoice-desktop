@@ -11,3 +11,5 @@ Next: auth/users/permissions, Prisma company extension, HTTPS, Postgres service.
 Known: server HTTP only; cloud-sync empty; release.yml pilot ships source zip only (no installer, no dist script); release workflow untested until first CI run on main; branch protection applied after first push.
 
 Phase 0c runner: tools/run-phases.ps1 (dry-run verified; run with -From/-To; state in docs/phase-state.json).
+
+Phase 3 domain engine: done (v0.2.0). packages/domain: money, rounding, tax, fx, numbering, invoice-state, journal, allocation, period, errors; fixtures in tests/fixtures; coverage threshold 95% lines.

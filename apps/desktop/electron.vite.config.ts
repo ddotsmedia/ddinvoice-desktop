@@ -4,5 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   main: { plugins: [externalizeDepsPlugin()] },
   preload: { plugins: [externalizeDepsPlugin()] },
-  renderer: { root: 'src/renderer', plugins: [react()] },
+  renderer: {
+    root: 'src/renderer',
+    base: './',
+    plugins: [react()],
+    build: { outDir: '../../out/renderer', emptyOutDir: true },
+  },
 });

@@ -152,11 +152,35 @@ function migrateSafely(ctx: Ctx, secrets: Secrets): boolean {
   return r.ok;
 }
 
+interface SetupInput {
+  companyNameEn: string;
+  companyNameAr?: string;
+  trn?: string;
+  emirate?: 'ABU_DHABI' | 'DUBAI' | 'SHARJAH' | 'AJMAN' | 'UMM_AL_QUWAIN' | 'RAS_AL_KHAIMAH' | 'FUJAIRAH';
+  adminEmail: string;
+  adminPassword?: string;
+}
+
+/** Reads and deletes the desktop wizard's setup file (it carries the admin password). Undefined when --input is absent. */
+export function readSetupInput(file: string | undefined): SetupInput | undefined {
+  if (!file) return undefined;
+  let parsed: SetupInput;
+  try {
+    parsed = JSON.parse(readFileSync(file, 'utf8')) as SetupInput;
+  } finally {
+    rmSync(file, { force: true });
+  }
+  if (!parsed.companyNameEn || !parsed.adminEmail) throw new Error('setup input is missing companyNameEn or adminEmail');
+  if (parsed.adminPassword !== undefined && parsed.adminPassword.length < 12) throw new Error('admin password must be at least 12 characters');
+  return parsed;
+}
+
 async function installServer(opts: Opts): Promise<void> {
   const noService = opts.flags.has('no-service');
   const ctx = makeCtx(opts, !noService);
-  const companyName = opts.values.get('company-name');
-  const adminEmail = opts.values.get('admin-email');
+  const setup = readSetupInput(opts.values.get('input'));
+  const companyName = setup?.companyNameEn ?? opts.values.get('company-name');
+  const adminEmail = setup?.adminEmail ?? opts.values.get('admin-email');
   if (!companyName || !adminEmail) throw new Error('--company-name and --admin-email are required');
   if (ctx.service && !isElevated()) throw new Error('install-server must run elevated (Administrator); use --no-service for process mode');
   if (existsSync(paths(ctx).config)) throw new Error(`Already installed at ${ctx.dataDir}; run uninstall-server first`);
@@ -193,7 +217,13 @@ async function installServer(opts: Opts): Promise<void> {
   let companyId: string;
   let adminPassword: string;
   try {
-    const r = await seedDemo(prisma, undefined, { legalNameEn: companyName, adminEmail });
+    const r = await seedDemo(prisma, setup?.adminPassword, {
+      legalNameEn: companyName,
+      legalNameAr: setup?.companyNameAr,
+      trn: setup?.trn,
+      emirate: setup?.emirate,
+      adminEmail,
+    });
     ({ companyId, adminPassword } = r);
   } finally {
     await prisma.$disconnect();
@@ -238,7 +268,8 @@ async function installServer(opts: Opts): Promise<void> {
   await waitHealthy(ctx);
   log(ctx, `INSTALLED company=${companyName} companyId=${companyId} port=${ctx.port}`);
   log(ctx, `CA SHA-256 fingerprint: ${pki.caFingerprint}`);
-  process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
+  // The wizard supplied the password itself; only a generated one is printed (once).
+  if (!setup) process.stdout.write(`Admin email: ${adminEmail}\nAdmin password (shown once): ${adminPassword}\n`);
 }
 
 async function uninstallServer(opts: Opts): Promise<void> {

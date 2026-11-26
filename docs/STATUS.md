@@ -1,13 +1,9 @@
 # Status
-Phase 4 Server runtime: done (server 0.5.0). Phase 3 Local API, Phase 4 db schema, Phase 2 CI/release: done.
-- Server: apps/server (Nest 10), guards: Throttler, Pairing (X-Device-Id), JWT, Permission; Idempotency, Audit.
-- Runtime: pnpm vendor (PG 16.9, Node 22.23.4, WinSW 3 -> vendor/, gitignored); pnpm bundle:server -> dist/{server,worker,setup}.cjs.
-- Setup CLI: node dist/setup.cjs install-server|uninstall-server|status|migrate|rotate-cert|pairing-code (src/setup/cli.ts).
-- Postgres: 127.0.0.1:47821, scram only, roles ddinvoice_owner/ddinvoice_app; secrets DPAPI in secrets.bin; pre-migrate pg_dump + auto restore.
-- TLS: local CA 10y + server cert 2y (node-forge); GET /pairing/ca; mDNS _ddinvoice._tcp (bonjour-service).
-- Pairing: 6-digit code, 10 min, single use; POST /pairing; unpaired rejected except /pairing, /health.
-- Tests: server 46 + db 38; smoke: tools/scripts/smoke-server.ps1 (process mode) passes.
-- NOT verified here: service mode (WinSW install, firewall, LocalService) needs an elevated PC; run install-server elevated to confirm.
-- Deferred: users/roles/companies/branches/items/sequences admin, documents render (P6), e-invoice (P11), installer packaging of prisma CLI.
-- Known: journal drafts need schema change; payments AED-only; dependabot alerts unchanged.
-Next: Prompt 5.
+Phase 5 Desktop shell: partial (desktop 0.6.0). Server 0.6.0. Phases 1-4: done.
+- Desktop: electron-vite; main hardening (sandbox, CSP via app://, nav/window.open blocked, single instance, safeStorage tokens, CA pin); typed preload.
+- Wizard: language, role, Main PC install (CLI --input, elevated, unverified here) or workstation discovery, pairing, login. Version gate.
+- Screens: Overview (partial figures), invoice register (server paging, columns, saved views, CSV, preview), invoice editor (grid keys, autosave 5s, Ctrl+S, issue with Idempotency-Key).
+- Other nav items: placeholder only. Missing: Ctrl+K, offline mode and drafts store, Playwright smoke, items/customers/credit notes/receipts/journals/periods/settings.
+- Tests: desktop 32 (grid, totals, nav by permission, i18n parity, RTL/Testing Library); root pnpm test passes.
+- Not verified here: install-server elevated run; live login against a server.
+Next: Prompt 6.

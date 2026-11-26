@@ -11,3 +11,5 @@ allowBuilds:
   electron: true
   esbuild: true
   prisma: true
+minimumReleaseAgeExclude:
+  - lucide-react@1.81.0

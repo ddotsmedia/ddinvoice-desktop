@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import argon2 from 'argon2';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Emirate } from '@prisma/client';
 import { ROLE_PERMISSIONS } from '@ddinvoice/contracts';
 
 /** argon2id; the server's login verifies with the same format. */
@@ -26,17 +26,17 @@ const COA: [string, string, string, AT, boolean?][] = [
 export async function seedDemo(
   prisma: PrismaClient,
   adminPassword = randomBytes(12).toString('base64url'),
-  opts: { trn?: string; legalNameEn?: string; adminEmail?: string } = {},
+  opts: { trn?: string; legalNameEn?: string; legalNameAr?: string; emirate?: Emirate; adminEmail?: string } = {},
 ) {
   const company = await prisma.company.create({
     data: {
-      legalNameEn: opts.legalNameEn ?? 'Demo Trading LLC', legalNameAr: 'ديمو للتجارة ذ.م.م', trn: opts.trn ?? '100000000000003', tradeLicenseNo: 'DEMO-0001',
-      emirate: 'DUBAI', addressEn: 'Demo Street, Dubai, UAE', addressAr: 'شارع ديمو، دبي، الإمارات',
+      legalNameEn: opts.legalNameEn ?? 'Demo Trading LLC', legalNameAr: opts.legalNameAr ?? 'ديمو للتجارة ذ.م.م', trn: opts.trn ?? '100000000000003', tradeLicenseNo: 'DEMO-0001',
+      emirate: opts.emirate ?? 'DUBAI', addressEn: 'Demo Street, Dubai, UAE', addressAr: 'شارع ديمو، دبي، الإمارات',
     },
   });
   const companyId = company.id;
   await prisma.branch.create({
-    data: { companyId, code: 'HQ', nameEn: 'Head Office', nameAr: 'المكتب الرئيسي', address: 'Demo Street, Dubai', emirate: 'DUBAI' },
+    data: { companyId, code: 'HQ', nameEn: 'Head Office', nameAr: 'المكتب الرئيسي', address: 'Demo Street, Dubai', emirate: opts.emirate ?? 'DUBAI' },
   });
 
   const acc: Record<string, string> = {};

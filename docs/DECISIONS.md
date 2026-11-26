@@ -51,3 +51,17 @@
 2026-11-26 | icacls (OI)(CI) only on directories | on files it silently leaves an empty ACL
 2026-11-26 | migrate deploy uses the repo prisma CLI (packages/db); packaged installer must ship it | installer packaging is a later prompt
 2026-11-26 | Server and desktop 0.5.0; MIN_CLIENT_VERSION 0.5.0 | minor bump per rule 15 for Prompt 4; clients must send X-Device-Id
+2026-11-26 | Renderer calls the Local API with fetch; server CORS allows app://ddi (DDI_CORS_ORIGINS for dev) | CSP connect-src needs the server origin; main-process proxying would bypass the typed client
+2026-11-26 | Server CA pinned at pairing: main verifies the leaf against the stored CA PEM (Electron verify proc and Node https ca) | local CA is not in the OS trust store
+2026-11-26 | CSP is a response header from the app:// protocol, not a meta tag | a meta CSP intersects with connect-src and cannot follow the paired origin
+2026-11-26 | Renderer may write only locale/role/setupDone via config:set; server binding is written only by server:pair | a compromised renderer must not redirect tokens to another origin
+2026-11-26 | Setup input (incl. admin password) goes to a private temp file, read and deleted by CLI --input | argv is visible and RunAs cannot pipe stdin
+2026-11-26 | Config patch schema has no defaults (CONFIG_FIELDS) | zod partial() of a defaulted schema reset setupDone/role on any patch
+2026-11-26 | Version gate skipped while the server is unreachable (banner shows), retried on connection change | otherwise startup hangs on Loading when offline
+2026-11-26 | Tailwind 3.4.19 in desktop and packages/ui (was 4.3.5 in ui) | spec pins Tailwind 3; RTL uses logical utilities (ms-, me-, start/end) since Tailwind 3 has no rtl: variant
+2026-11-26 | Client calls use a hand-written fetch wrapper (lib/api.ts), not openapi-fetch | generated contract has no response types and no query params for list endpoints
+2026-11-26 | Not built yet (no API): item autocomplete, branch, reference field, company/branch names in top bar, collected-this-month | add when endpoints exist; invoice editor omits them
+2026-11-26 | Overview receivables/overdue computed client-side from first 200 unpaid invoices, prefixed ≥ when truncated | no reporting endpoint yet
+2026-11-26 | eslint-plugin-i18next 6.1.5 at root; no-literal-string on renderer TSX | rule 10
+2026-11-26 | pnpm added lucide-react@1.81.0 to minimumReleaseAgeExclude | pnpm prompt for a package younger than the release-age gate; review before next bump
+2026-11-26 | Desktop and server 0.6.0; MIN_CLIENT_VERSION 0.6.0 | rule 15; a server test requires minClient == version, so 0.5.x clients are blocked

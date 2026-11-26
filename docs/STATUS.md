@@ -1,18 +1,9 @@
 # Status
-Phase 1 scaffold: done (v0.1.0).
-Phase 2 CI/release: done.
-- CI: .github/workflows/ci.yml (push all branches, PRs; windows; lint/typecheck/test/build; junit artifact on failure)
-- Release: .github/workflows/release.yml (CI success on main -> pilot prerelease; workflow_dispatch -> promote stable)
-- Deps: .github/dependabot.yml (npm weekly minor+patch group, actions monthly)
+Phase 1 scaffold: done (v0.1.0). Phase 2 CI/release: done. Phase 4 db schema: CI fixed.
+- CI: .github/workflows/ci.yml (lint, typecheck, test, build; db job on linux postgres)
+- Release: .github/workflows/release.yml (CI success on main -> pilot prerelease; dispatch -> promote)
 - Deploy flow: docs/DEPLOY.md; branch protection payload docs/protection.json
-- Monorepo: apps/{desktop,server,cloud-sync}, packages/{domain,contracts,db,ui,documents}
-- Key: CLAUDE.md, docs/ARCHITECTURE.md, packages/domain/src/rounding.ts, packages/contracts/src/errors.ts
+- Key: CLAUDE.md, docs/ARCHITECTURE.md, packages/domain/src/rounding.ts, packages/contracts/src/errors.ts, packages/db/prisma/schema.prisma
+- Fixed CI: pnpm 12 blocked @embedded-postgres/linux-x64 build script; allowed in pnpm-workspace.yaml.
 Next: auth/users/permissions, Prisma company extension, HTTPS, Postgres service.
-Known: server HTTP only; cloud-sync empty; release.yml pilot ships source zip only (no installer, no dist script); release workflow untested until first CI run on main; branch protection applied after first push.
-
-Phase 0c runner: tools/run-phases.ps1 (dry-run verified; run with -From/-To; state in docs/phase-state.json).
-
-Phase 3 domain engine: done (v0.2.0). packages/domain: money, rounding, tax, fx, numbering, invoice-state, journal, allocation, period, errors; fixtures in tests/fixtures; coverage threshold 95% lines.
-
-Phase 4 db: done (v0.3.0). packages/db: Prisma 6.19.3 schema (36 models), migrations (init + raw SQL: balance/immutability/locked-period/changelog triggers, ddinvoice_app role), seed (Demo Trading LLC; `pnpm --filter @ddinvoice/db seed` after build), scope.ts company extension, contracts/permissions.ts. Tests use embedded-postgres (random port). Known: ddinvoice_app has no login yet; nested writes bypass scope.
-Fixed CI: pnpm 12 blocked @embedded-postgres/linux-x64 build script (ERR_PNPM_IGNORED_BUILDS); allowed in pnpm-workspace.yaml.
+Known: server HTTP only; cloud-sync empty; release pilot ships source zip only (no installer); GitHub reports 114 dependency vulnerabilities (dependabot).

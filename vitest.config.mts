@@ -1,4 +1,14 @@
-import { configDefaults, defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vitest/config';
 
-// packages/db needs a temp Postgres (globalSetup); it runs via its own package script.
-export default defineConfig({ test: { exclude: [...configDefaults.exclude, 'packages/db/**'] } });
+// Root run includes packages/db, which needs a temp Postgres (globalSetup, embedded-postgres).
+export default defineConfig({
+  resolve: {
+    alias: { '@ddinvoice/contracts': fileURLToPath(new URL('packages/contracts/src/index.ts', import.meta.url)) },
+  },
+  test: {
+    globalSetup: ['packages/db/tests/global-setup.ts'],
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
+  },
+});

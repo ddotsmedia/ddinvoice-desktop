@@ -4,6 +4,8 @@ import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import EmbeddedPostgres from 'embedded-postgres';
 
 const require = createRequire(import.meta.url);
@@ -29,6 +31,7 @@ export default async function setup() {
   const url = `postgresql://postgres:postgres@127.0.0.1:${port}/ddinvoice_test`;
   process.env.DATABASE_URL = url;
   execFileSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], {
+    cwd: join(dirname(fileURLToPath(import.meta.url)), '..'),
     env: { ...process.env, DATABASE_URL: url },
     stdio: 'pipe',
   });

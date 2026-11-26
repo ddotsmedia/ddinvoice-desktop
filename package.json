@@ -10,7 +10,7 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "build:libs": "pnpm -r --filter \"./packages/*\" build",
-    "test": "vitest run --passWithNoTests && pnpm --filter @ddinvoice/db test",
+    "test": "vitest run --passWithNoTests",
     "lint": "eslint .",
     "typecheck": "pnpm build:libs && pnpm -r typecheck"
   },

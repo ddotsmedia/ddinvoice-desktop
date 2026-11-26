@@ -1,0 +1,71 @@
+name: release
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to promote, e.g. 0.3.0'
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  pilot:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build pilot assets and prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./apps/desktop/package.json').version")
+          TAG="v${V}-pilot.${RUN_NUMBER}"
+          PREV=$(gh release list --limit 50 --json tagName -q '.[].tagName' | grep -- '-pilot\.' | head -n1 || true)
+          mkdir -p assets
+          if node -e "process.exit(require('./package.json').scripts?.dist ? 0 : 1)"; then
+            pnpm dist
+            cp -r dist/* assets/
+          else
+            git archive --format=zip -o "assets/ddinvoice-source-${TAG}.zip" "$SHA"
+          fi
+          { echo "Channel: pilot"; echo; git log --pretty='- %s (%h)' ${PREV:+"$PREV..."}"$SHA"; } > notes.md
+          gh release create "$TAG" --target "$SHA" --prerelease --title "Pilot $TAG" --notes-file notes.md assets/*
+  promote:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Promote newest pilot to stable
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $VERSION"; exit 1; }
+          PILOT=$(gh release list --limit 200 --json tagName,createdAt \
+            | jq -r --arg p "v$VERSION-pilot." '[.[] | select(.tagName | startswith($p))] | sort_by(.createdAt) | last | .tagName // empty')
+          [ -n "$PILOT" ] || { echo "No pilot release for $VERSION"; exit 1; }
+          git fetch --tags --force
+          SHA=$(git rev-list -n1 "$PILOT")
+          mkdir -p assets
+          gh release download "$PILOT" --dir assets --clobber
+          gh release create "v$VERSION" --target "$SHA" --latest --title "v$VERSION" --notes "Promoted from $PILOT" assets/*

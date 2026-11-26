@@ -12,5 +12,6 @@
 10. i18n: all UI text via i18next keys (en, ar); RTL via dir attribute; numbers/IDs/emails wrapped in <bdi>.
 11. Tests: vitest; every feature adds tests; pnpm test must pass before commit.
 12. Local only: never SSH, never touch any VPS, never run destructive commands (rm -rf outside repo, git reset --hard, git push --force, docker prune, dropdb on non-test DBs). Deployment only via GitHub Actions in Prompt 10.
-13. End of every prompt: pnpm lint && pnpm typecheck && pnpm test; update docs/STATUS.md (done, key files, next, known issues; max 15 lines); git add -A; git commit -m '<phase>: <summary>'. Never push.
+13. End of every prompt: pnpm lint && pnpm typecheck && pnpm test (stop and fix if any fail); update docs/STATUS.md; git add -A; git commit -m "<phase>: <summary>"; git pull --rebase origin main; git push origin main. Never --force, never push with failing tests, never rewrite history. After push run gh run watch on the CI run; if CI fails, fix, commit, push again until green.
+15. Versioning: apps/desktop/package.json version is the product version (semver). Bump minor at the end of each numbered prompt, patch for fixes. Server and desktop share the version.
 14. Pin exact versions; commit pnpm-lock.yaml.

@@ -7,3 +7,4 @@ release
 pgdata
 vendor
 *.tsbuildinfo
+test-results

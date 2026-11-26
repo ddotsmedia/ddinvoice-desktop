@@ -5,3 +5,8 @@
 2026-11-26 | Root eslint/vitest (not pnpm -r) for lint/test | single config, faster; dev/build/typecheck use pnpm -r
 2026-11-26 | Server hello listens plain HTTP on 47820 | HTTPS/TLS arrives with server phase
 2026-11-26 | Prisma companyId extension, DB journal trigger deferred | no business tables yet
+2026-11-26 | Version 0.1.0 for apps/desktop and apps/server | scaffold is first numbered prompt; minor bump per rule 15
+2026-11-26 | Remote origin https://github.com/ddotsmedia/ddinvoice-desktop, first push without pull --rebase | remote repo empty, no origin/main to rebase onto
+2026-11-26 | Pilot prerelease uses source zip until root `dist` script exists | installer not built yet (Prompt 9)
+2026-11-26 | Promote job runs on ubuntu-latest, pilot on windows-latest | promote needs only gh/jq; pilot may build Windows installer
+2026-11-26 | Branch protection requires check "ci" and blocks force push, no PR requirement | direct pushes per rule 13 still allowed

@@ -10,3 +10,6 @@
 2026-11-26 | Pilot prerelease uses source zip until root `dist` script exists | installer not built yet (Prompt 9)
 2026-11-26 | Promote job runs on ubuntu-latest, pilot on windows-latest | promote needs only gh/jq; pilot may build Windows installer
 2026-11-26 | Branch protection requires check "ci" and blocks force push, no PR requirement | direct pushes per rule 13 still allowed
+2026-11-26 | Runner precheck ignores untracked files (git status --untracked-files=no) | root PHASES.md is an untracked duplicate; tracked-clean is the rule's intent
+2026-11-26 | claude -p run without --max-turns | flag not present in claude CLI 2.1.321
+2026-11-26 | Runner pipes prompt via stdin to claude -p | avoids PowerShell native-arg quoting of multi-line prompts

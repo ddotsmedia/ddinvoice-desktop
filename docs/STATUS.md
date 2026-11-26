@@ -9,3 +9,5 @@ Phase 2 CI/release: done.
 - Key: CLAUDE.md, docs/ARCHITECTURE.md, packages/domain/src/rounding.ts, packages/contracts/src/errors.ts
 Next: auth/users/permissions, Prisma company extension, HTTPS, Postgres service.
 Known: server HTTP only; cloud-sync empty; release.yml pilot ships source zip only (no installer, no dist script); release workflow untested until first CI run on main; branch protection applied after first push.
+
+Phase 0c runner: tools/run-phases.ps1 (dry-run verified; run with -From/-To; state in docs/phase-state.json).

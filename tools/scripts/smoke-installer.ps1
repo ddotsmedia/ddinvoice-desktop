@@ -41,4 +41,4 @@ finally {
   }
   Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
 }
-if ($fail) { Write-Host "SMOKE FAILED: $fail"; exit 1 } else { Write-Host 'SMOKE OK' }
+if ($fail) { Write-Host "SMOKE FAILED: $fail"; exit 1 } else { Write-Host 'SMOKE OK'; exit 0 }

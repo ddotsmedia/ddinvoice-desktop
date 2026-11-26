@@ -7,19 +7,717 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Emirate {
+  ABU_DHABI
+  DUBAI
+  SHARJAH
+  AJMAN
+  UMM_AL_QUWAIN
+  RAS_AL_KHAIMAH
+  FUJAIRAH
+}
+enum Locale {
+  en
+  ar
+}
+enum DeviceKind {
+  SERVER
+  WORKSTATION
+}
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+enum PeriodStatus {
+  OPEN
+  LOCKED
+}
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+enum DocStatus {
+  DRAFT
+  ISSUED
+}
+enum SettlementStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERPAID
+}
+enum DeliveryStatus {
+  NOT_SENT
+  SENT
+}
+enum EInvoiceStatus {
+  NOT_REQUIRED
+  PENDING
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+enum PayMethod {
+  CASH
+  BANK
+  CARD
+  CHEQUE
+}
+enum JournalSource {
+  INVOICE
+  CREDIT_NOTE
+  PAYMENT
+  MANUAL
+  REVERSAL
+  BILL
+  PAYROLL
+}
+enum DocKind {
+  PDF
+  EINVOICE_XML
+}
+enum DocLanguage {
+  en
+  ar
+  bi
+}
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+enum BackupKind {
+  HOURLY
+  DAILY
+  MONTHLY
+  MANUAL
+}
+enum BackupTarget {
+  LOCAL
+  FOLDER
+  CLOUD
+}
+
 model Company {
-  id        String   @id @default(uuid())
-  name      String
+  id String @id @default(uuid())
   createdAt DateTime @default(now())
-  users     User[]
+  updatedAt DateTime @updatedAt
+  legalNameEn String
+  legalNameAr String
+  trn String
+  tin String?
+  tradeLicenseNo String
+  emirate Emirate
+  addressEn String
+  addressAr String
+  baseCurrency String @default("AED")
+  fiscalYearStartMonth Int @default(1)
+  logoFileId String?
+  einvoiceEnabled Boolean @default(false)
+  einvoiceFrom DateTime?
+  settings Json @default("{}")
+
+  @@unique([trn])
+}
+
+model Branch {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  code String
+  nameEn String
+  nameAr String
+  address String
+  emirate Emirate
+
+  @@unique([companyId, code])
 }
 
 model User {
-  id        String  @id @default(uuid())
+  id String @id @default(uuid())
   companyId String
-  email     String
-  company   Company @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email String
+  nameEn String
+  nameAr String?
+  passwordHash String
+  mfaSecret String?
+  isActive Boolean @default(true)
+  locale Locale @default(en)
+  lastLoginAt DateTime?
+  failedLogins Int @default(0)
+  lockedUntil DateTime?
+  roles UserRole[]
+  sessions Session[]
 
   @@unique([companyId, email])
-  @@index([companyId])
 }
+
+model Role {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name String
+  permissions String[]
+  users UserRole[]
+
+  @@unique([companyId, name])
+}
+
+model UserRole {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String
+  roleId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([companyId, userId])
+}
+
+model Device {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name String
+  kind DeviceKind
+  fingerprint String
+  lastSeenAt DateTime?
+  appVersion String
+  revokedAt DateTime?
+  sessions Session[]
+
+  @@unique([companyId, fingerprint])
+}
+
+model Session {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String
+  deviceId String
+  refreshTokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  ip String
+  userAgent String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, userId])
+  @@index([companyId, refreshTokenHash])
+}
+
+model Account {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  code String
+  nameEn String
+  nameAr String
+  type AccountType
+  subtype String?
+  isControl Boolean @default(false)
+  parentId String?
+  isActive Boolean @default(true)
+  parent Account? @relation("AccountTree", fields: [parentId], references: [id])
+  children Account[] @relation("AccountTree")
+
+  @@unique([companyId, code])
+}
+
+model Period {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  start DateTime @db.Date
+  end DateTime @db.Date
+  status PeriodStatus @default(OPEN)
+
+  @@index([companyId, start, end])
+}
+
+model TaxCode {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  code String
+  rate Decimal @db.Decimal(18,6)
+  labelEn String
+  labelAr String
+  outputAccountId String
+  inputAccountId String?
+  effectiveFrom DateTime @db.Date
+  effectiveTo DateTime? @db.Date
+  isActive Boolean @default(true)
+
+  @@index([companyId, code])
+  @@unique([companyId, code, effectiveFrom])
+}
+
+model Customer {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  code String
+  nameEn String
+  nameAr String
+  trn String?
+  email String
+  phone String
+  addressEn String
+  addressAr String
+  emirate Emirate?
+  country String @default("AE")
+  currency String @default("AED")
+  paymentTermsDays Int @default(30)
+  creditLimit Decimal? @db.Decimal(18,4)
+  receivableAccountId String
+
+  @@unique([companyId, code])
+  @@index([companyId, nameEn])
+}
+
+model Item {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sku String
+  nameEn String
+  nameAr String
+  unit String
+  salePrice Decimal @db.Decimal(18,4)
+  taxCodeId String
+  revenueAccountId String
+  isActive Boolean @default(true)
+
+  @@unique([companyId, sku])
+}
+
+model NumberSequence {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  docType String
+  pattern String
+  nextValue BigInt @default(1)
+  year Int?
+
+  @@unique([companyId, docType, year])
+}
+
+model Quote {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  number String?
+  revision Int @default(1)
+  status QuoteStatus @default(DRAFT)
+  customerId String
+  issueDate DateTime? @db.Date
+  validUntil DateTime? @db.Date
+  currency String @default("AED")
+  fxRate Decimal @default(1) @db.Decimal(18,6)
+  subtotal Decimal @db.Decimal(18,4)
+  discountTotal Decimal @db.Decimal(18,4)
+  taxTotal Decimal @db.Decimal(18,4)
+  total Decimal @db.Decimal(18,4)
+  notes String @default("")
+  terms String @default("")
+  lines QuoteLine[]
+
+  @@index([companyId, status])
+  @@index([companyId, customerId])
+  @@unique([companyId, number, revision])
+}
+
+model QuoteLine {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quoteId String
+  lineNo Int
+  itemId String?
+  description String
+  qty Decimal @db.Decimal(18,6)
+  unitPrice Decimal @db.Decimal(18,6)
+  discountPct Decimal @default(0) @db.Decimal(18,6)
+  discountAmt Decimal @default(0) @db.Decimal(18,4)
+  taxCodeId String
+  net Decimal @db.Decimal(18,4)
+  tax Decimal @db.Decimal(18,4)
+  gross Decimal @db.Decimal(18,4)
+  accountId String
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, quoteId])
+  @@unique([quoteId, lineNo])
+}
+
+model Invoice {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branchId String?
+  number String?
+  customerId String
+  status DocStatus @default(DRAFT)
+  settlementStatus SettlementStatus @default(UNPAID)
+  deliveryStatus DeliveryStatus @default(NOT_SENT)
+  einvoiceStatus EInvoiceStatus @default(NOT_REQUIRED)
+  issueDate DateTime? @db.Date
+  currency String @default("AED")
+  fxRate Decimal @default(1) @db.Decimal(18,6)
+  subtotal Decimal @db.Decimal(18,4)
+  discountTotal Decimal @db.Decimal(18,4)
+  taxTotal Decimal @db.Decimal(18,4)
+  total Decimal @db.Decimal(18,4)
+  totalAed Decimal @db.Decimal(18,4)
+  amountPaid Decimal @default(0) @db.Decimal(18,4)
+  notes String @default("")
+  terms String @default("")
+  version Int @default(1)
+  issuedAt DateTime?
+  issuedById String?
+  snapshotId String?
+  supplyDate DateTime? @db.Date
+  dueDate DateTime @db.Date
+  legacyRef String?
+  lines InvoiceLine[]
+  creditNotes CreditNote[]
+  allocations Allocation[]
+
+  @@unique([companyId, number])
+  @@index([companyId, status, issueDate])
+  @@index([companyId, customerId])
+  @@index([companyId, legacyRef])
+}
+
+model InvoiceLine {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  invoiceId String
+  lineNo Int
+  itemId String?
+  description String
+  qty Decimal @db.Decimal(18,6)
+  unitPrice Decimal @db.Decimal(18,6)
+  discountPct Decimal @default(0) @db.Decimal(18,6)
+  discountAmt Decimal @default(0) @db.Decimal(18,4)
+  taxCodeId String
+  net Decimal @db.Decimal(18,4)
+  tax Decimal @db.Decimal(18,4)
+  gross Decimal @db.Decimal(18,4)
+  accountId String
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, invoiceId])
+  @@unique([invoiceId, lineNo])
+}
+
+model CreditNote {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  number String?
+  invoiceId String
+  customerId String
+  reason String
+  status DocStatus @default(DRAFT)
+  settlementStatus SettlementStatus @default(UNPAID)
+  deliveryStatus DeliveryStatus @default(NOT_SENT)
+  einvoiceStatus EInvoiceStatus @default(NOT_REQUIRED)
+  issueDate DateTime? @db.Date
+  currency String @default("AED")
+  fxRate Decimal @default(1) @db.Decimal(18,6)
+  subtotal Decimal @db.Decimal(18,4)
+  discountTotal Decimal @db.Decimal(18,4)
+  taxTotal Decimal @db.Decimal(18,4)
+  total Decimal @db.Decimal(18,4)
+  totalAed Decimal @db.Decimal(18,4)
+  amountPaid Decimal @default(0) @db.Decimal(18,4)
+  notes String @default("")
+  terms String @default("")
+  version Int @default(1)
+  issuedAt DateTime?
+  issuedById String?
+  snapshotId String?
+  lines CreditNoteLine[]
+  allocations Allocation[]
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@unique([companyId, number])
+  @@index([companyId, status, issueDate])
+  @@index([companyId, invoiceId])
+}
+
+model CreditNoteLine {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creditNoteId String
+  lineNo Int
+  itemId String?
+  description String
+  qty Decimal @db.Decimal(18,6)
+  unitPrice Decimal @db.Decimal(18,6)
+  discountPct Decimal @default(0) @db.Decimal(18,6)
+  discountAmt Decimal @default(0) @db.Decimal(18,4)
+  taxCodeId String
+  net Decimal @db.Decimal(18,4)
+  tax Decimal @db.Decimal(18,4)
+  gross Decimal @db.Decimal(18,4)
+  accountId String
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, creditNoteId])
+  @@unique([creditNoteId, lineNo])
+}
+
+model Payment {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  number String
+  customerId String
+  date DateTime @db.Date
+  method PayMethod
+  bankAccountId String
+  amount Decimal @db.Decimal(18,4)
+  currency String @default("AED")
+  fxRate Decimal @default(1) @db.Decimal(18,6)
+  unallocated Decimal @db.Decimal(18,4)
+  reference String @default("")
+  allocations Allocation[]
+
+  @@unique([companyId, number])
+  @@index([companyId, customerId])
+  @@index([companyId, date])
+}
+
+model Allocation {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paymentId String
+  invoiceId String?
+  creditNoteId String?
+  amount Decimal @db.Decimal(18,4)
+  date DateTime @db.Date
+  payment Payment @relation(fields: [paymentId], references: [id])
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  creditNote CreditNote? @relation(fields: [creditNoteId], references: [id])
+
+  @@index([companyId, paymentId])
+  @@index([companyId, invoiceId])
+  @@index([companyId, creditNoteId])
+}
+
+model Journal {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  number String
+  date DateTime @db.Date
+  source JournalSource
+  sourceId String?
+  memo String @default("")
+  postedAt DateTime @default(now())
+  reversalOfId String?
+  reversalOf Journal? @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversals Journal[] @relation("Reversal")
+  lines JournalLine[]
+
+  @@unique([companyId, number])
+  @@index([companyId, date])
+  @@index([companyId, source, sourceId])
+}
+
+model JournalLine {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  journalId String
+  accountId String
+  debit Decimal @default(0) @db.Decimal(18,4)
+  credit Decimal @default(0) @db.Decimal(18,4)
+  branchId String?
+  description String @default("")
+  journal Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, journalId])
+  @@index([companyId, accountId])
+}
+
+model IssueSnapshot {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  docType String
+  docId String
+  payload Json
+  sha256 String
+  templateVersion String
+
+  @@index([companyId, docType, docId])
+}
+
+model Document {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  docType String
+  docId String
+  snapshotId String
+  kind DocKind
+  language DocLanguage
+  path String
+  sha256 String
+  bytes Int
+
+  @@index([companyId, docType, docId])
+}
+
+model IdempotencyKey {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  key String
+  userId String
+  route String
+  requestHash String
+  responseJson Json
+
+  @@unique([companyId, key])
+}
+
+model Outbox {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  topic String
+  payload Json
+  status OutboxStatus @default(PENDING)
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  leaseUntil DateTime?
+  lastError String?
+  external Boolean @default(false)
+
+  @@index([companyId, status, nextAttemptAt])
+}
+
+model AuditEvent {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId String?
+  action String
+  entity String
+  entityId String
+  before Json?
+  after Json?
+  reason String?
+  ip String?
+  at DateTime @default(now())
+
+  @@index([companyId, entity, entityId])
+  @@index([companyId, at])
+}
+
+model SyncState {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  enabled Boolean @default(false)
+  lastSeqSent BigInt @default(0)
+  lastAckAt DateTime?
+
+  @@unique([companyId])
+}
+
+model ChangeLog {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  seq BigInt @default(autoincrement()) @unique
+  entity String
+  entityId String
+  op String
+  data Json
+  at DateTime @default(now())
+
+  @@index([companyId, seq])
+}
+
+model License {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  licenseKey String
+  payload Json
+  seats Int
+  modules String[]
+  expiresAt DateTime?
+  lastValidatedAt DateTime?
+  graceUntil DateTime?
+
+  @@index([companyId, licenseKey])
+}
+
+model BackupRecord {
+  id String @id @default(uuid())
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  path String
+  sha256 String
+  sizeBytes BigInt
+  kind BackupKind
+  target BackupTarget
+  status String
+  at DateTime @default(now())
+
+  @@index([companyId, at])
+}
+

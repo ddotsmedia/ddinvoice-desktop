@@ -13,3 +13,5 @@ Known: server HTTP only; cloud-sync empty; release.yml pilot ships source zip on
 Phase 0c runner: tools/run-phases.ps1 (dry-run verified; run with -From/-To; state in docs/phase-state.json).
 
 Phase 3 domain engine: done (v0.2.0). packages/domain: money, rounding, tax, fx, numbering, invoice-state, journal, allocation, period, errors; fixtures in tests/fixtures; coverage threshold 95% lines.
+
+Phase 4 db: done (v0.3.0). packages/db: Prisma 6.19.3 schema (36 models), migrations (init + raw SQL: balance/immutability/locked-period/changelog triggers, ddinvoice_app role), seed (Demo Trading LLC; `pnpm --filter @ddinvoice/db seed` after build), scope.ts company extension, contracts/permissions.ts. Tests use embedded-postgres (random port). Known: ddinvoice_app has no login yet; nested writes bypass scope.

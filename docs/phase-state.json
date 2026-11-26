@@ -1,0 +1,19 @@
+﻿{
+    "completed":  [
+                      1
+                  ],
+    "skipped":  [
+
+                ],
+    "runs":  [
+                 {
+                     "n":  1,
+                     "model":  "sonnet",
+                     "startedAt":  "2026-11-26T13:38:47.4342345+04:00",
+                     "endedAt":  "2026-11-26T13:43:57.2546043+04:00",
+                     "costUsd":  0.8138,
+                     "attempts":  1,
+                     "commit":  "fac94b2"
+                 }
+             ]
+}

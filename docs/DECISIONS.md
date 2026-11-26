@@ -31,7 +31,7 @@
 2026-11-26 | Idempotency-Key reserved as PENDING before the handler, released on error; required on POST/PATCH/DELETE; auth endpoints skip it | concurrent duplicate cannot create a second record; rule 6 covers DELETE too
 2026-11-26 | AuditEvent written by interceptor after the command commits | spec asks for an interceptor; trade-off: audit row is a separate write after commit
 2026-11-26 | HTTPS required in production (certPath/keyPath); plain HTTP allowed only outside production | spec says HTTPS; dev needs no certificate
-2026-11-26 | Config from %PROGRAMDATA%DDInvoiceserver.json; .env.local fallback only when NODE_ENV is not production | spec; keeps secrets out of repo
+2026-11-26 | Config from %PROGRAMDATA%\DDInvoice\server.json; .env.local fallback only when NODE_ENV is not production | spec; keeps secrets out of repo
 2026-11-26 | Access JWT EdDSA (jose) with Ed25519 key in dataDir/keys; refresh token <sessionId>.<secret>, only sha256 stored; reuse revokes session | rotation with reuse detection; no secret at rest
 2026-11-26 | Period must be open and cover the Dubai business date to post; otherwise PERIOD_LOCKED (422) | rule 7 and locked-period trigger; application check first for a clear error
 2026-11-26 | Payments AED-only in this pass; allocation oldest-first unless allocations given; overpayment stays unallocated | foreign-currency allocation deferred; keeps AR math exact

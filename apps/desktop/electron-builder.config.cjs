@@ -37,7 +37,9 @@ module.exports = {
   afterPack: (ctx) => {
     const fs = require('node:fs');
     for (const rel of ['node_modules', path.join('prisma-cli', 'node_modules')]) {
-      fs.cpSync(path.join(root, 'dist', rel), path.join(ctx.appOutDir, 'resources', 'dist', rel), { recursive: true, dereference: true });
+      const to = path.join(ctx.appOutDir, 'resources', 'dist', rel);
+      fs.rmSync(to, { recursive: true, force: true }); // electron-builder may have copied part of it already
+      fs.cpSync(path.join(root, 'dist', rel), to, { recursive: true, dereference: true });
     }
   },
   win,

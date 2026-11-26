@@ -68,9 +68,9 @@ FunctionEnd
   ${If} $DD_Role == "server"
     ${If} ${FileExists} "$R2\DDInvoice\server.json"
       ; Update: pre-migrate backup, migrate, restart services.
-      nsExec::ExecToLog '"$INSTDIR\resources\vendor\node\node.exe" "$INSTDIR\resources\dist\setup.cjs" migrate --restart --app-root "$INSTDIR\resources"'
+      nsExec::ExecToLog 'cmd.exe /c ""$INSTDIR\resources\vendor\node\node.exe" "$INSTDIR\resources\dist\setup.cjs" migrate --restart --app-root "$INSTDIR\resources" > "$R2DDInvoiceinstall-out.log" 2>&1"'
     ${Else}
-      nsExec::ExecToLog '"$INSTDIR\resources\vendor\node\node.exe" "$INSTDIR\resources\dist\setup.cjs" install-server --deferred --app-root "$INSTDIR\resources"'
+      nsExec::ExecToLog 'cmd.exe /c ""$INSTDIR\resources\vendor\node\node.exe" "$INSTDIR\resources\dist\setup.cjs" install-server --deferred --app-root "$INSTDIR\resources" > "$R2DDInvoiceinstall-out.log" 2>&1"'
     ${EndIf}
     Pop $R4
     ${If} $R4 != 0

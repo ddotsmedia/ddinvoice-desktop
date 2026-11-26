@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { cpSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 const root = resolve(__dirname, '..', '..');
@@ -12,6 +12,18 @@ const external = [
   '@nestjs/microservices', '@nestjs/microservices/*', '@nestjs/websockets', '@nestjs/websockets/*',
   '@nestjs/platform-fastify', 'class-validator', 'class-transformer', 'cache-manager', '@fastify/static', 'bufferutil', 'utf-8-validate',
 ];
+
+/** Node-style lookup of a package root (works when exports/main hide package.json): walk up from `from`, also checking pnpm's sibling layout. */
+function pkgDirOf(name: string, from: string): string {
+  let dir = realpathSync(from);
+  for (let i = 0; i < 12; i++) {
+    for (const c of [join(dir, 'node_modules', name), join(dir, name)]) {
+      if (existsSync(join(c, 'package.json')) && (JSON.parse(readFileSync(join(c, 'package.json'), 'utf8')) as { name?: string }).name === name) return realpathSync(c);
+    }
+    dir = dirname(dir);
+  }
+  throw new Error(`cannot locate package root for ${name}`);
+}
 
 async function main(): Promise<void> {
   mkdirSync(out, { recursive: true });
@@ -49,10 +61,24 @@ async function main(): Promise<void> {
   if (!existsSync(chromeDir)) throw new Error('chrome-headless-shell is not vendored; run pnpm vendor');
   cpSync(chromeDir, join(out, 'chrome'), { recursive: true });
   // Prisma CLI + schema engine + migrations so a packaged install can run migrate deploy without the repo.
-  const prismaDir = rootReq('prisma', dbDir);
-  const prismaNm = dirname(prismaDir);
-  mkdirSync(join(out, 'prisma-cli'), { recursive: true });
-  for (const e of readdirSync(prismaNm)) if (e !== 'typescript') cpSync(join(prismaNm, e), join(out, 'prisma-cli', 'node_modules', e), { recursive: true, dereference: true });
+  // Flat node_modules holding prisma and its runtime dependency closure (pnpm's store is symlinked, so resolve each dep from its parent).
+  const cliNm = join(out, 'prisma-cli', 'node_modules');
+  // Hoist to the root when free or same version; nest under the requiring package on a version conflict.
+  const placed = new Map<string, string>(); // root-level name -> version
+  const addPkg = (name: string, from: string, targetNm: string): void => {
+    const dir = pkgDirOf(name, from);
+    const pj = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version: string; dependencies?: Record<string, string> };
+    const rootHas = placed.get(name);
+    let dest: string;
+    if (rootHas === undefined) {
+      placed.set(name, pj.version);
+      dest = join(cliNm, name);
+    } else if (rootHas === pj.version) return;
+    else dest = join(targetNm, name);
+    cpSync(dir, dest, { recursive: true, dereference: true, filter: (p) => !/[\/]node_modules([\/]|$)/.test(p.slice(dir.length)) });
+    for (const d of Object.keys(pj.dependencies ?? {})) addPkg(d, dir, join(dest, 'node_modules'));
+  };
+  addPkg('prisma', dbDir, cliNm);
   cpSync(join(dbDir, 'prisma'), join(out, 'prisma'), { recursive: true });
   console.log(`bundled to ${out}`);
 }

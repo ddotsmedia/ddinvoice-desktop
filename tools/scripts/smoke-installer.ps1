@@ -23,7 +23,10 @@ try {
   Start-Sleep 3
   foreach ($s in $svc) { if (Get-Service $s -ErrorAction SilentlyContinue) { throw "$s still registered" } }
   if (-not (Test-Path (Join-Path $data 'server.json'))) { throw 'data folder was removed' }
-} catch { $fail = $_ }
+} catch {
+  $fail = $_
+  foreach ($l in 'setup.log', 'server.log') { $lf = Join-Path $data "logs$l"; if (Test-Path $lf) { Write-Host "--- $l (tail)"; Get-Content $lf -Tail 40 } }
+}
 finally {
   # Test cleanup of this run's own temp install data only.
   if (Test-Path $data) {

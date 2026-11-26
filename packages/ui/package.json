@@ -1,0 +1,20 @@
+{
+  "name": "@ddinvoice/ui",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "clsx": "2.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.28",
+    "react": "18.3.1",
+    "tailwindcss": "4.3.5"
+  }
+}

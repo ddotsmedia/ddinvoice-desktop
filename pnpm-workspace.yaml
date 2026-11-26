@@ -10,6 +10,7 @@ allowBuilds:
   '@embedded-postgres/windows-x64': true
   electron: true
   esbuild: true
+  electron-winstaller: false
   prisma: true
 minimumReleaseAgeExclude:
   - lucide-react@1.81.0

@@ -48,7 +48,7 @@ jobs:
       - name: Smoke test installer (silent install, services, /health, uninstall, data kept)
         shell: pwsh
         run: ./tools/scripts/smoke-installer.ps1
-      - name: Create pilot prerelease (published as prerelease: the updater cannot see drafts)
+      - name: Create pilot prerelease (not a draft; the updater cannot see drafts)
         shell: bash
         run: |
           set -euo pipefail
